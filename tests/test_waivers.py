@@ -77,12 +77,19 @@ def test_drop_candidates_excludes_ir_and_current_optimal_starters(league):
 
 
 def test_evaluate_claim_small_upgrade_f2001(league):
+    candidates = waivers.drop_candidates(league, "t1", 3)
     result = waivers.evaluate_claim(league, "t1", 3, "f2001")
 
     assert 0.5 < result["points_gained"] < 2.5
     assert result["drop_player_id"] is not None
     assert result["drop_player_id"] != "p1013"
     assert result["drop_player_id"] in fixtures.team_roster_player_ids(league, "t1")
+
+    # Dropping any player already outside the baseline optimal lineup
+    # produces the identical resulting total, so the tie must break toward
+    # the first candidate in drop_candidates' own ascending order, the
+    # least valuable player to keep, rather than an arbitrary one.
+    assert result["drop_player_id"] == candidates[0]
 
 
 def test_evaluate_claim_big_upgrade_f2002(league):
@@ -126,6 +133,26 @@ def test_faab_never_declines_a_real_upgrade():
             assert target["verdict"] == "skip", target
             assert target["bid"] == 0, target
         assert target["bid"] <= faab_remaining, target
+
+    # The fixture guarantees both kinds of target exist (see
+    # tests/test_lineup.py's free agent gain band test); assert both
+    # branches of the loop above actually ran, so this cannot pass
+    # vacuously if that guarantee ever drifts.
+    assert any(target["points_gained"] > 0 for target in result["targets"])
+    assert any(target["points_gained"] <= 0 for target in result["targets"])
+
+
+def test_faab_zero_budget_bids_nothing_but_still_claims():
+    broken = copy.deepcopy(fixtures.load_fixture_league(waiver_type="faab"))
+    broken["settings"]["waiver"]["faab_remaining"]["t1"] = 0
+
+    result = waivers.rank_waiver_targets(broken, "t1", 3)
+
+    assert result["faab_remaining"] == 0
+    for target in result["targets"]:
+        assert target["bid"] == 0, target
+        if target["points_gained"] > 0:
+            assert target["verdict"] == "claim", target
 
 
 # ---------------------------------------------------------------------------
@@ -212,7 +239,7 @@ def test_unknown_waiver_type_raises(league):
 
 
 def test_faab_team_missing_from_faab_remaining_raises():
-    broken = fixtures.load_fixture_league(waiver_type="faab")
+    broken = copy.deepcopy(fixtures.load_fixture_league(waiver_type="faab"))
     del broken["settings"]["waiver"]["faab_remaining"]["t1"]
 
     with pytest.raises(EngineError):

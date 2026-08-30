@@ -19,7 +19,7 @@ league["settings"]["waiver"]["type"]:
 Both branches share the same claim simulation: evaluate_claim works out,
 for one free agent, which current roster player would actually be dropped
 and how many points the team's optimal lineup gains from the swap. Only
-the verdict and bid/priority bookkeping layered on top of that simulation
+the verdict and bid/priority bookkeeping layered on top of that simulation
 differ between the two branches.
 
 Public names other chunks import directly:
@@ -31,7 +31,10 @@ from __future__ import annotations
 from typing import Any
 
 from engine.common import EngineError, round_points
-from engine.fixtures import free_agent_ids, get_player, get_team, team_roster_player_ids
+from engine.fixtures import free_agent_ids, get_player, get_team
+# EXCLUDED_STATUSES is imported (not used directly below) so the status set
+# that keeps a player out of a starting lineup is never re-declared here;
+# is_startable is used in drop_candidates' fallback path.
 from engine.lineup import EXCLUDED_STATUSES, is_startable, optimal_lineup
 from engine.scoring import projected_points_by_player
 

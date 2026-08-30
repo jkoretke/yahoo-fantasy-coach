@@ -1,0 +1,303 @@
+{
+  "injuries": [
+    {
+      "id": "22",
+      "displayName": "Arizona Cardinals",
+      "injuries": [
+        {
+          "id": "600001",
+          "longComment": "James Conner injured his foot during practice on August 28 and has been placed on injured reserve. He is expected to miss significant time and the team will re-evaluate his status closer to the estimated return date.",
+          "shortComment": "Conner (foot) was placed on injured reserve Sunday.",
+          "status": "Injured Reserve",
+          "date": "2026-08-30T21:50Z",
+          "athlete": {
+            "displayName": "James Conner",
+            "firstName": "James",
+            "lastName": "Conner",
+            "shortName": "J. Conner",
+            "position": {
+              "id": "9",
+              "name": "Running Back",
+              "displayName": "Running Back",
+              "abbreviation": "RB",
+              "leaf": true
+            },
+            "team": {
+              "id": "22",
+              "uid": "s:20~l:28~t:22",
+              "slug": "arizona-cardinals",
+              "name": "Cardinals",
+              "abbreviation": "ARI",
+              "displayName": "Arizona Cardinals"
+            }
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "Injured Reserve",
+              "abbreviation": "IR-R"
+            },
+            "type": "Foot",
+            "location": "Leg",
+            "detail": "Not Specified",
+            "side": "Not Specified",
+            "returnDate": "2026-10-11"
+          },
+          "source": {
+            "id": "1",
+            "description": "Official Injury Report"
+          },
+          "type": {
+            "id": "5",
+            "name": "INJURY_STATUS_IR",
+            "description": "Injured Reserve",
+            "abbreviation": "IR"
+          }
+        },
+        {
+          "id": "600002",
+          "longComment": "Trey McBride participated fully in practice all week and carries no injury designation heading into the game.",
+          "shortComment": "McBride (undisclosed) is active for Week 1.",
+          "status": "Active",
+          "date": "2026-08-29T18:05Z",
+          "athlete": {
+            "displayName": "Trey McBride",
+            "firstName": "Trey",
+            "lastName": "McBride",
+            "shortName": "T. McBride",
+            "position": {
+              "id": "6",
+              "name": "Tight End",
+              "displayName": "Tight End",
+              "abbreviation": "TE",
+              "leaf": true
+            },
+            "team": {
+              "id": "22",
+              "uid": "s:20~l:28~t:22",
+              "slug": "arizona-cardinals",
+              "name": "Cardinals",
+              "abbreviation": "ARI",
+              "displayName": "Arizona Cardinals"
+            }
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "Active",
+              "abbreviation": "ACT"
+            },
+            "type": "Undisclosed",
+            "location": "Not Specified",
+            "detail": "Not Specified",
+            "side": "Not Specified",
+            "returnDate": null
+          },
+          "source": {
+            "id": "1",
+            "description": "Official Injury Report"
+          },
+          "type": {
+            "id": "1",
+            "name": "INJURY_STATUS_ACTIVE",
+            "description": "Active",
+            "abbreviation": "ACT"
+          }
+        }
+      ]
+    },
+    {
+      "id": "28",
+      "displayName": "Washington Commanders",
+      "injuries": [
+        {
+          "id": "600003",
+          "longComment": "The wide receiver was limited in Wednesday's practice with a hamstring issue and is considered questionable for Sunday's game.",
+          "shortComment": "Wilson (hamstring) is questionable for Week 1.",
+          "status": "Questionable",
+          "date": "2026-08-30T15:30Z",
+          "athlete": {
+            "displayName": "Terry Wilson",
+            "firstName": "Terry",
+            "lastName": "Wilson",
+            "shortName": "T. Wilson",
+            "position": {
+              "id": "4",
+              "name": "Wide Receiver",
+              "displayName": "Wide Receiver",
+              "abbreviation": "WR",
+              "leaf": true
+            },
+            "team": {
+              "id": "28",
+              "uid": "s:20~l:28~t:28",
+              "slug": "washington-commanders",
+              "name": "Commanders",
+              "abbreviation": "WSH",
+              "displayName": "Washington Commanders"
+            }
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "Questionable",
+              "abbreviation": "Q"
+            },
+            "type": "Hamstring",
+            "location": "Upper Leg",
+            "detail": "Not Specified",
+            "side": "Left",
+            "returnDate": null
+          },
+          "source": {
+            "id": "1",
+            "description": "Official Injury Report"
+          },
+          "type": {
+            "id": "2",
+            "name": "INJURY_STATUS_QUESTIONABLE",
+            "description": "Questionable",
+            "abbreviation": "Q"
+          }
+        },
+        {
+          "id": "600004",
+          "longComment": "Not yet cleared by the team's medical staff; official practice designation is still pending for this week.",
+          "status": "Out",
+          "date": "2026-08-30T12:00Z",
+          "athlete": {
+            "displayName": "Cole Bennett",
+            "firstName": "Cole",
+            "lastName": "Bennett",
+            "shortName": "C. Bennett",
+            "position": {
+              "id": "7",
+              "name": "Cornerback",
+              "displayName": "Cornerback",
+              "abbreviation": "CB",
+              "leaf": true
+            }
+          },
+          "source": {
+            "id": "1",
+            "description": "Official Injury Report"
+          },
+          "type": {
+            "id": "3",
+            "name": "INJURY_STATUS_OUT",
+            "description": "Out",
+            "abbreviation": "O"
+          }
+        }
+      ]
+    },
+    {
+      "id": "12",
+      "displayName": "Kansas City Chiefs",
+      "injuries": [
+        {
+          "id": "600005",
+          "longComment": "The player has been suspended by the league office for a violation of the substance abuse policy and will not play until reinstated.",
+          "shortComment": "Ridley suspended for violation of league policy.",
+          "status": "Suspension",
+          "date": "2026-08-28T14:00Z",
+          "athlete": {
+            "displayName": "Marcus Ridley",
+            "firstName": "Marcus",
+            "lastName": "Ridley",
+            "shortName": "M. Ridley",
+            "position": {
+              "id": "9",
+              "name": "Running Back",
+              "displayName": "Running Back",
+              "abbreviation": "RB",
+              "leaf": true
+            },
+            "team": {
+              "id": "12",
+              "uid": "s:20~l:28~t:12",
+              "slug": "kansas-city-chiefs",
+              "name": "Chiefs",
+              "abbreviation": "KC",
+              "displayName": "Kansas City Chiefs"
+            }
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "Suspended",
+              "abbreviation": "SUSP"
+            },
+            "type": "Suspension",
+            "location": "Not Specified",
+            "detail": "Substance Abuse Policy",
+            "side": "Not Specified",
+            "returnDate": "2026-09-20"
+          },
+          "source": {
+            "id": "1",
+            "description": "Official Injury Report"
+          },
+          "type": {
+            "id": "6",
+            "name": "INJURY_STATUS_SUSPENSION",
+            "description": "Suspension",
+            "abbreviation": "SUSP"
+          }
+        },
+        {
+          "id": "600006",
+          "longComment": "Placed on the Reserve/Commissioner Exempt list while a personal matter is reviewed by the league office.",
+          "shortComment": "Marsh placed on Reserve/Commissioner Exempt list.",
+          "status": "Reserve/Commissioner Exempt",
+          "date": "2026-08-27T19:45Z",
+          "athlete": {
+            "displayName": "Deion Marsh",
+            "firstName": "Deion",
+            "lastName": "Marsh",
+            "shortName": "D. Marsh",
+            "position": {
+              "id": "4",
+              "name": "Wide Receiver",
+              "displayName": "Wide Receiver",
+              "abbreviation": "WR",
+              "leaf": true
+            },
+            "team": {
+              "id": "12",
+              "uid": "s:20~l:28~t:12",
+              "slug": "kansas-city-chiefs",
+              "name": "Chiefs",
+              "abbreviation": "KC",
+              "displayName": "Kansas City Chiefs"
+            }
+          },
+          "details": {
+            "fantasyStatus": {
+              "description": "Reserve/Commissioner Exempt",
+              "abbreviation": "CEL"
+            },
+            "type": "Not Specified",
+            "location": "Not Specified",
+            "detail": "Not Specified",
+            "side": "Not Specified",
+            "returnDate": null
+          },
+          "source": {
+            "id": "1",
+            "description": "Official Injury Report"
+          },
+          "type": {
+            "id": "9",
+            "name": "INJURY_STATUS_COMMISSIONER_EXEMPT",
+            "description": "Reserve/Commissioner Exempt",
+            "abbreviation": "CEL"
+          }
+        }
+      ]
+    }
+  ],
+  "season": {
+    "year": 2026,
+    "type": 2,
+    "name": "Regular Season"
+  },
+  "status": "success",
+  "timestamp": "2026-08-30T22:15Z"
+}

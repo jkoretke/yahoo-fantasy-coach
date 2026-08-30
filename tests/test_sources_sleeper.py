@@ -121,14 +121,14 @@ def test_fetch_projections_parses_legacy_dict_shape(mock_fetch, tmp_path: Path) 
     assert adp_only["projected_points"] == 0.0
 
 
-@patch("engine.sources.sleeper.fetch_cached_json")
-def test_fetch_projections_enabled_false_skips_fetch(mock_fetch, tmp_path: Path) -> None:
-    result = sleeper.fetch_projections(2025, 4, enabled=False, cache_root=tmp_path)
+def test_fetch_projections_enabled_false_skips_fetch(tmp_path: Path) -> None:
+    with patch("urllib.request.urlopen") as mock_urlopen:
+        result = sleeper.fetch_projections(2025, 4, enabled=False, cache_root=tmp_path)
+        assert mock_urlopen.call_count == 0
 
     assert result["available"] is False
     assert result["reason"] == "disabled"
     assert result["data"] is None
-    mock_fetch.assert_not_called()
 
 
 def test_fetch_projections_envelope_keys_and_json_serializable(tmp_path: Path) -> None:

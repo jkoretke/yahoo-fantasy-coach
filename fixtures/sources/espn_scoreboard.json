@@ -1,0 +1,353 @@
+{
+  "leagues": [
+    {
+      "id": "28",
+      "name": "National Football League",
+      "abbreviation": "NFL"
+    }
+  ],
+  "provider": {
+    "id": "1",
+    "name": "ESPN"
+  },
+  "season": {
+    "type": 2,
+    "year": 2025
+  },
+  "week": {
+    "number": 4
+  },
+  "events": [
+    {
+      "id": "401772940",
+      "uid": "s:20~l:28~e:401772940",
+      "date": "2025-09-28T17:00Z",
+      "name": "Pittsburgh Steelers at New England Patriots",
+      "shortName": "PIT @ NE",
+      "season": {
+        "year": 2025,
+        "type": 2,
+        "slug": "regular-season"
+      },
+      "week": {
+        "number": 4
+      },
+      "status": {
+        "clock": 0.0,
+        "displayClock": "0:00",
+        "period": 0,
+        "type": {
+          "id": "1",
+          "name": "STATUS_SCHEDULED",
+          "state": "pre",
+          "completed": false,
+          "description": "Scheduled",
+          "detail": "Sun, September 28th at 1:00 PM EDT",
+          "shortDetail": "9/28 - 1:00 PM EDT"
+        }
+      },
+      "competitions": [
+        {
+          "id": "401772940",
+          "uid": "s:20~l:28~e:401772940~c:401772940",
+          "date": "2025-09-28T17:00Z",
+          "neutralSite": false,
+          "conferenceCompetition": false,
+          "timeValid": true,
+          "venue": {
+            "id": "3852",
+            "fullName": "Gillette Stadium",
+            "address": {
+              "city": "Foxborough",
+              "state": "MA",
+              "country": "USA"
+            },
+            "indoor": false
+          },
+          "competitors": [
+            {
+              "id": "17",
+              "homeAway": "home",
+              "team": {
+                "id": "17",
+                "location": "New England",
+                "name": "Patriots",
+                "abbreviation": "NE",
+                "displayName": "New England Patriots"
+              },
+              "score": "14"
+            },
+            {
+              "id": "23",
+              "homeAway": "away",
+              "team": {
+                "id": "23",
+                "location": "Pittsburgh",
+                "name": "Steelers",
+                "abbreviation": "PIT",
+                "displayName": "Pittsburgh Steelers"
+              },
+              "score": "21"
+            }
+          ],
+          "status": {
+            "type": {
+              "id": "1",
+              "state": "pre",
+              "completed": false,
+              "detail": "Sun, September 28th at 1:00 PM EDT"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "401772942",
+      "uid": "s:20~l:28~e:401772942",
+      "date": "2025-09-29T00:20Z",
+      "name": "Washington Commanders at Green Bay Packers",
+      "shortName": "WSH @ GB",
+      "season": {
+        "year": 2025,
+        "type": 2,
+        "slug": "regular-season"
+      },
+      "week": {
+        "number": 4
+      },
+      "status": {
+        "clock": 0.0,
+        "displayClock": "0:00",
+        "period": 0,
+        "type": {
+          "id": "1",
+          "name": "STATUS_SCHEDULED",
+          "state": "pre",
+          "completed": false,
+          "description": "Scheduled",
+          "detail": "Mon, September 29th at 8:20 PM EDT",
+          "shortDetail": "9/29 - 8:20 PM EDT"
+        }
+      },
+      "competitions": [
+        {
+          "id": "401772942",
+          "uid": "s:20~l:28~e:401772942~c:401772942",
+          "date": "2025-09-29T00:20Z",
+          "neutralSite": false,
+          "conferenceCompetition": false,
+          "timeValid": true,
+          "venue": {
+            "id": "3810",
+            "fullName": "Lambeau Field",
+            "address": {
+              "city": "Green Bay",
+              "state": "WI",
+              "country": "USA"
+            },
+            "indoor": false
+          },
+          "competitors": [
+            {
+              "id": "9",
+              "homeAway": "home",
+              "team": {
+                "id": "9",
+                "location": "Green Bay",
+                "name": "Packers",
+                "abbreviation": "GB",
+                "displayName": "Green Bay Packers"
+              },
+              "score": "0"
+            },
+            {
+              "id": "28",
+              "homeAway": "away",
+              "team": {
+                "id": "28",
+                "location": "Washington",
+                "name": "Commanders",
+                "abbreviation": "WSH",
+                "displayName": "Washington Commanders"
+              },
+              "score": "0"
+            }
+          ],
+          "status": {
+            "type": {
+              "id": "1",
+              "state": "pre",
+              "completed": false,
+              "detail": "Mon, September 29th at 8:20 PM EDT"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "401772938",
+      "uid": "s:20~l:28~e:401772938",
+      "date": "2025-09-26T00:15Z",
+      "name": "Seattle Seahawks at Arizona Cardinals",
+      "shortName": "SEA @ ARI",
+      "season": {
+        "year": 2025,
+        "type": 2,
+        "slug": "regular-season"
+      },
+      "week": {
+        "number": 4
+      },
+      "status": {
+        "clock": 0.0,
+        "displayClock": "0:00",
+        "period": 4,
+        "type": {
+          "id": "3",
+          "name": "STATUS_FINAL",
+          "state": "post",
+          "completed": true,
+          "description": "Final",
+          "detail": "Final",
+          "shortDetail": "Final"
+        }
+      },
+      "competitions": [
+        {
+          "id": "401772938",
+          "uid": "s:20~l:28~e:401772938~c:401772938",
+          "date": "2025-09-26T00:15Z",
+          "neutralSite": false,
+          "conferenceCompetition": false,
+          "timeValid": true,
+          "venue": {
+            "id": "3970",
+            "fullName": "State Farm Stadium",
+            "address": {
+              "city": "Glendale",
+              "state": "AZ",
+              "country": "USA"
+            },
+            "indoor": true
+          },
+          "competitors": [
+            {
+              "id": "22",
+              "homeAway": "home",
+              "team": {
+                "id": "22",
+                "location": "Arizona",
+                "name": "Cardinals",
+                "abbreviation": "ARI",
+                "displayName": "Arizona Cardinals"
+              },
+              "score": "16"
+            },
+            {
+              "id": "26",
+              "homeAway": "away",
+              "team": {
+                "id": "26",
+                "location": "Seattle",
+                "name": "Seahawks",
+                "abbreviation": "SEA",
+                "displayName": "Seattle Seahawks"
+              },
+              "score": "23"
+            }
+          ],
+          "status": {
+            "type": {
+              "id": "3",
+              "state": "post",
+              "completed": true,
+              "detail": "Final"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "401772935",
+      "uid": "s:20~l:28~e:401772935",
+      "date": "2025-09-28T13:30Z",
+      "name": "Minnesota Vikings at Cleveland Browns",
+      "shortName": "MIN @ CLE",
+      "season": {
+        "year": 2025,
+        "type": 2,
+        "slug": "regular-season"
+      },
+      "week": {
+        "number": 4
+      },
+      "status": {
+        "clock": 0.0,
+        "displayClock": "0:00",
+        "period": 0,
+        "type": {
+          "id": "1",
+          "name": "STATUS_SCHEDULED",
+          "state": "pre",
+          "completed": false,
+          "description": "Scheduled",
+          "detail": "Sun, September 28th at 9:30 AM EDT",
+          "shortDetail": "9/28 - 9:30 AM EDT"
+        }
+      },
+      "competitions": [
+        {
+          "id": "401772935",
+          "uid": "s:20~l:28~e:401772935~c:401772935",
+          "date": "2025-09-28T13:30Z",
+          "neutralSite": true,
+          "conferenceCompetition": false,
+          "timeValid": true,
+          "venue": {
+            "id": "9500",
+            "fullName": "Tottenham Hotspur Stadium",
+            "address": {
+              "city": "London",
+              "country": "England"
+            },
+            "indoor": false
+          },
+          "competitors": [
+            {
+              "id": "8",
+              "homeAway": "home",
+              "team": {
+                "id": "8",
+                "location": "Minnesota",
+                "name": "Vikings",
+                "abbreviation": "MIN",
+                "displayName": "Minnesota Vikings"
+              },
+              "score": "0"
+            },
+            {
+              "id": "5",
+              "homeAway": "away",
+              "team": {
+                "id": "5",
+                "location": "Cleveland",
+                "name": "Browns",
+                "abbreviation": "CLE",
+                "displayName": "Cleveland Browns"
+              },
+              "score": "0"
+            }
+          ],
+          "status": {
+            "type": {
+              "id": "1",
+              "state": "pre",
+              "completed": false,
+              "detail": "Sun, September 28th at 9:30 AM EDT"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

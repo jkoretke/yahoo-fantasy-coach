@@ -1,0 +1,46 @@
+{
+  "4984": {
+    "first_name": "Josh",
+    "last_name": "Allen",
+    "full_name": "Josh Allen",
+    "position": "QB",
+    "fantasy_positions": ["QB"],
+    "team": "BUF",
+    "injury_status": null,
+    "active": true,
+    "search_full_name": "joshallen"
+  },
+  "4986": {
+    "first_name": "James",
+    "last_name": "Conner",
+    "full_name": "James Conner",
+    "position": "RB",
+    "fantasy_positions": ["RB"],
+    "team": "ARI",
+    "injury_status": "Questionable",
+    "active": true,
+    "search_full_name": "jamesconner"
+  },
+  "11604": {
+    "first_name": "Marvin",
+    "last_name": "Harrison Jr.",
+    "full_name": "Marvin Harrison Jr.",
+    "position": "WR",
+    "fantasy_positions": ["WR"],
+    "team": "IND",
+    "injury_status": null,
+    "active": true,
+    "search_full_name": "marvinharrisonjr"
+  },
+  "7547": {
+    "first_name": "Amon-Ra",
+    "last_name": "St. Brown",
+    "full_name": "Amon-Ra St. Brown",
+    "position": "WR",
+    "fantasy_positions": ["WR"],
+    "team": null,
+    "injury_status": null,
+    "active": false,
+    "search_full_name": "amonrastbrown"
+  }
+}

@@ -1,0 +1,232 @@
+{
+  "teams": [
+    {
+      "team_id": "t1",
+      "name": "Sample Squad One",
+      "manager": "Manager One",
+      "is_owner_team": true,
+      "roster": [
+        {
+          "player_id": "p1001",
+          "selected_slot": "QB"
+        },
+        {
+          "player_id": "p1002",
+          "selected_slot": "RB"
+        },
+        {
+          "player_id": "p1003",
+          "selected_slot": "RB"
+        },
+        {
+          "player_id": "p1004",
+          "selected_slot": "WR"
+        },
+        {
+          "player_id": "p1005",
+          "selected_slot": "WR"
+        },
+        {
+          "player_id": "p1006",
+          "selected_slot": "TE"
+        },
+        {
+          "player_id": "p1007",
+          "selected_slot": "W/R/T"
+        },
+        {
+          "player_id": "p1008",
+          "selected_slot": "K"
+        },
+        {
+          "player_id": "p1009",
+          "selected_slot": "DEF"
+        },
+        {
+          "player_id": "p1010",
+          "selected_slot": "BN"
+        },
+        {
+          "player_id": "p1011",
+          "selected_slot": "BN"
+        },
+        {
+          "player_id": "p1012",
+          "selected_slot": "BN"
+        },
+        {
+          "player_id": "p1013",
+          "selected_slot": "IR"
+        }
+      ]
+    },
+    {
+      "team_id": "t2",
+      "name": "Sample Squad Two",
+      "manager": "Manager Two",
+      "is_owner_team": false,
+      "roster": [
+        {
+          "player_id": "p200",
+          "selected_slot": "QB"
+        },
+        {
+          "player_id": "p201",
+          "selected_slot": "RB"
+        },
+        {
+          "player_id": "p202",
+          "selected_slot": "RB"
+        },
+        {
+          "player_id": "p203",
+          "selected_slot": "W/R/T"
+        },
+        {
+          "player_id": "p204",
+          "selected_slot": "BN"
+        },
+        {
+          "player_id": "p205",
+          "selected_slot": "WR"
+        },
+        {
+          "player_id": "p206",
+          "selected_slot": "WR"
+        },
+        {
+          "player_id": "p207",
+          "selected_slot": "BN"
+        },
+        {
+          "player_id": "p208",
+          "selected_slot": "TE"
+        },
+        {
+          "player_id": "p209",
+          "selected_slot": "BN"
+        },
+        {
+          "player_id": "p210",
+          "selected_slot": "K"
+        },
+        {
+          "player_id": "p211",
+          "selected_slot": "DEF"
+        }
+      ]
+    },
+    {
+      "team_id": "t3",
+      "name": "Sample Squad Three",
+      "manager": "Manager Three",
+      "is_owner_team": false,
+      "roster": [
+        {
+          "player_id": "p300",
+          "selected_slot": "QB"
+        },
+        {
+          "player_id": "p301",
+          "selected_slot": "RB"
+        },
+        {
+          "player_id": "p302",
+          "selected_slot": "RB"
+        },
+        {
+          "player_id": "p303",
+          "selected_slot": "W/R/T"
+        },
+        {
+          "player_id": "p304",
+          "selected_slot": "BN"
+        },
+        {
+          "player_id": "p305",
+          "selected_slot": "WR"
+        },
+        {
+          "player_id": "p306",
+          "selected_slot": "WR"
+        },
+        {
+          "player_id": "p307",
+          "selected_slot": "BN"
+        },
+        {
+          "player_id": "p308",
+          "selected_slot": "TE"
+        },
+        {
+          "player_id": "p309",
+          "selected_slot": "BN"
+        },
+        {
+          "player_id": "p310",
+          "selected_slot": "K"
+        },
+        {
+          "player_id": "p311",
+          "selected_slot": "DEF"
+        }
+      ]
+    },
+    {
+      "team_id": "t4",
+      "name": "Sample Squad Four",
+      "manager": "Manager Four",
+      "is_owner_team": false,
+      "roster": [
+        {
+          "player_id": "p400",
+          "selected_slot": "QB"
+        },
+        {
+          "player_id": "p401",
+          "selected_slot": "RB"
+        },
+        {
+          "player_id": "p402",
+          "selected_slot": "RB"
+        },
+        {
+          "player_id": "p403",
+          "selected_slot": "W/R/T"
+        },
+        {
+          "player_id": "p404",
+          "selected_slot": "BN"
+        },
+        {
+          "player_id": "p405",
+          "selected_slot": "WR"
+        },
+        {
+          "player_id": "p406",
+          "selected_slot": "WR"
+        },
+        {
+          "player_id": "p407",
+          "selected_slot": "BN"
+        },
+        {
+          "player_id": "p408",
+          "selected_slot": "TE"
+        },
+        {
+          "player_id": "p409",
+          "selected_slot": "BN"
+        },
+        {
+          "player_id": "p410",
+          "selected_slot": "K"
+        },
+        {
+          "player_id": "p411",
+          "selected_slot": "DEF"
+        }
+      ]
+    }
+  ]
+}

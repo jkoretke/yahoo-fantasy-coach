@@ -1,0 +1,155 @@
+{
+  "league_id": "sample.l.100001",
+  "name": "Sample Offline League",
+  "season": 2026,
+  "current_week": 3,
+  "num_teams": 4,
+  "settings": {
+    "scoring": {
+      "stats": {
+        "passing_yards": 0.04,
+        "passing_touchdowns": 4.0,
+        "interceptions": -2.0,
+        "rushing_yards": 0.1,
+        "rushing_touchdowns": 6.0,
+        "receptions": 0.5,
+        "receiving_yards": 0.1,
+        "receiving_touchdowns": 6.0,
+        "fumbles_lost": -2.0,
+        "field_goals_made": 3.0,
+        "extra_points_made": 1.0,
+        "defense_sacks": 1.0,
+        "defense_interceptions": 2.0,
+        "defense_fumble_recoveries": 2.0,
+        "defense_touchdowns": 6.0
+      },
+      "brackets": {
+        "defense_points_allowed": [
+          [
+            0,
+            0,
+            10.0
+          ],
+          [
+            1,
+            6,
+            7.0
+          ],
+          [
+            7,
+            13,
+            4.0
+          ],
+          [
+            14,
+            20,
+            1.0
+          ],
+          [
+            21,
+            27,
+            0.0
+          ],
+          [
+            28,
+            34,
+            -1.0
+          ],
+          [
+            35,
+            999,
+            -4.0
+          ]
+        ]
+      }
+    },
+    "roster_slots": [
+      {
+        "slot": "QB",
+        "count": 1,
+        "eligible_positions": [
+          "QB"
+        ],
+        "starting": true
+      },
+      {
+        "slot": "RB",
+        "count": 2,
+        "eligible_positions": [
+          "RB"
+        ],
+        "starting": true
+      },
+      {
+        "slot": "WR",
+        "count": 2,
+        "eligible_positions": [
+          "WR"
+        ],
+        "starting": true
+      },
+      {
+        "slot": "TE",
+        "count": 1,
+        "eligible_positions": [
+          "TE"
+        ],
+        "starting": true
+      },
+      {
+        "slot": "W/R/T",
+        "count": 1,
+        "eligible_positions": [
+          "WR",
+          "RB",
+          "TE"
+        ],
+        "starting": true
+      },
+      {
+        "slot": "K",
+        "count": 1,
+        "eligible_positions": [
+          "K"
+        ],
+        "starting": true
+      },
+      {
+        "slot": "DEF",
+        "count": 1,
+        "eligible_positions": [
+          "DEF"
+        ],
+        "starting": true
+      },
+      {
+        "slot": "BN",
+        "count": 3,
+        "eligible_positions": [],
+        "starting": false
+      },
+      {
+        "slot": "IR",
+        "count": 1,
+        "eligible_positions": [],
+        "starting": false
+      }
+    ],
+    "waiver": {
+      "type": "faab",
+      "faab_budget": 100,
+      "faab_remaining": {
+        "t1": 80,
+        "t2": 55,
+        "t3": 100,
+        "t4": 33
+      },
+      "priority_order": [
+        "t1",
+        "t2",
+        "t3",
+        "t4"
+      ]
+    }
+  }
+}

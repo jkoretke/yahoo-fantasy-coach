@@ -1,0 +1,52 @@
+{
+  "matchups": [
+    {
+      "matchup_id": "m2a",
+      "week": 2,
+      "team_ids": [
+        "t1",
+        "t3"
+      ]
+    },
+    {
+      "matchup_id": "m2b",
+      "week": 2,
+      "team_ids": [
+        "t2",
+        "t4"
+      ]
+    },
+    {
+      "matchup_id": "m3a",
+      "week": 3,
+      "team_ids": [
+        "t1",
+        "t2"
+      ]
+    },
+    {
+      "matchup_id": "m3b",
+      "week": 3,
+      "team_ids": [
+        "t3",
+        "t4"
+      ]
+    },
+    {
+      "matchup_id": "m4a",
+      "week": 4,
+      "team_ids": [
+        "t1",
+        "t4"
+      ]
+    },
+    {
+      "matchup_id": "m4b",
+      "week": 4,
+      "team_ids": [
+        "t2",
+        "t3"
+      ]
+    }
+  ]
+}

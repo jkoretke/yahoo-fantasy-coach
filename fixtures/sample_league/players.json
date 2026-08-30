@@ -1,0 +1,597 @@
+{
+  "players": [
+    {
+      "player_id": "f2001",
+      "name": "Rowan Ironside",
+      "positions": [
+        "WR"
+      ],
+      "nfl_team": "QRN",
+      "status": "",
+      "bye_week": 4
+    },
+    {
+      "player_id": "f2002",
+      "name": "Beckett Pemberly",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "VXA",
+      "status": "",
+      "bye_week": 5
+    },
+    {
+      "player_id": "f2003",
+      "name": "Zane Whitmore",
+      "positions": [
+        "WR"
+      ],
+      "nfl_team": "NVR",
+      "status": "",
+      "bye_week": 6
+    },
+    {
+      "player_id": "f2004",
+      "name": "Holt Eastwick",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "OKS",
+      "status": "",
+      "bye_week": 7
+    },
+    {
+      "player_id": "f2005",
+      "name": "Emory Brackston",
+      "positions": [
+        "TE"
+      ],
+      "nfl_team": "TDN",
+      "status": "",
+      "bye_week": 8
+    },
+    {
+      "player_id": "f2006",
+      "name": "Cade Marrow",
+      "positions": [
+        "QB"
+      ],
+      "nfl_team": "WLK",
+      "status": "",
+      "bye_week": 9
+    },
+    {
+      "player_id": "f2007",
+      "name": "Gideon Halloway",
+      "positions": [
+        "K"
+      ],
+      "nfl_team": "BRV",
+      "status": "",
+      "bye_week": 10
+    },
+    {
+      "player_id": "f2008",
+      "name": "Fenn Barrow",
+      "positions": [
+        "DEF"
+      ],
+      "nfl_team": "STG",
+      "status": "",
+      "bye_week": 11
+    },
+    {
+      "player_id": "f2009",
+      "name": "Kaden Foxglove",
+      "positions": [
+        "WR"
+      ],
+      "nfl_team": "FLX",
+      "status": "",
+      "bye_week": 12
+    },
+    {
+      "player_id": "f2010",
+      "name": "Bodie Millbrook",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "GLE",
+      "status": "",
+      "bye_week": 1
+    },
+    {
+      "player_id": "p1001",
+      "name": "Dax Voss",
+      "positions": [
+        "QB"
+      ],
+      "nfl_team": "ZPH",
+      "status": "",
+      "bye_week": 7
+    },
+    {
+      "player_id": "p1002",
+      "name": "Brix Duskin",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "QRN",
+      "status": "O",
+      "bye_week": 8
+    },
+    {
+      "player_id": "p1003",
+      "name": "Colt Blackwood",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "VXA",
+      "status": "",
+      "bye_week": 10
+    },
+    {
+      "player_id": "p1004",
+      "name": "Reeve Wexford",
+      "positions": [
+        "WR"
+      ],
+      "nfl_team": "NVR",
+      "status": "",
+      "bye_week": 5
+    },
+    {
+      "player_id": "p1005",
+      "name": "Tanner Elderfield",
+      "positions": [
+        "WR"
+      ],
+      "nfl_team": "OKS",
+      "status": "",
+      "bye_week": 3
+    },
+    {
+      "player_id": "p1006",
+      "name": "Marek Lockhart",
+      "positions": [
+        "TE"
+      ],
+      "nfl_team": "TDN",
+      "status": "",
+      "bye_week": 9
+    },
+    {
+      "player_id": "p1007",
+      "name": "Silas Stonebridge",
+      "positions": [
+        "WR"
+      ],
+      "nfl_team": "WLK",
+      "status": "",
+      "bye_week": 6
+    },
+    {
+      "player_id": "p1008",
+      "name": "Jonah Ashworth",
+      "positions": [
+        "K"
+      ],
+      "nfl_team": "BRV",
+      "status": "",
+      "bye_week": 4
+    },
+    {
+      "player_id": "p1009",
+      "name": "Wes Thornwell",
+      "positions": [
+        "DEF"
+      ],
+      "nfl_team": "STG",
+      "status": "",
+      "bye_week": 11
+    },
+    {
+      "player_id": "p1010",
+      "name": "Trace Winslow",
+      "positions": [
+        "RB",
+        "WR"
+      ],
+      "nfl_team": "FLX",
+      "status": "",
+      "bye_week": 12
+    },
+    {
+      "player_id": "p1011",
+      "name": "Corbin Rourke",
+      "positions": [
+        "WR",
+        "TE"
+      ],
+      "nfl_team": "GLE",
+      "status": "",
+      "bye_week": 2
+    },
+    {
+      "player_id": "p1012",
+      "name": "Deacon Brightwater",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "MTN",
+      "status": "",
+      "bye_week": 1
+    },
+    {
+      "player_id": "p1013",
+      "name": "Micah Ridgeway",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "ZPH",
+      "status": "IR",
+      "bye_week": 13
+    },
+    {
+      "player_id": "p200",
+      "name": "Lars Thackeray",
+      "positions": [
+        "QB"
+      ],
+      "nfl_team": "VXA",
+      "status": "",
+      "bye_week": 14
+    },
+    {
+      "player_id": "p201",
+      "name": "Perry Briarcliff",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "NVR",
+      "status": "",
+      "bye_week": 6
+    },
+    {
+      "player_id": "p202",
+      "name": "Sawyer Kestrel",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "OKS",
+      "status": "",
+      "bye_week": 9
+    },
+    {
+      "player_id": "p203",
+      "name": "Milo Ashgrove",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "TDN",
+      "status": "",
+      "bye_week": 12
+    },
+    {
+      "player_id": "p204",
+      "name": "Grant Vantage",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "WLK",
+      "status": "",
+      "bye_week": 2
+    },
+    {
+      "player_id": "p205",
+      "name": "Reid Thorne",
+      "positions": [
+        "WR"
+      ],
+      "nfl_team": "BRV",
+      "status": "",
+      "bye_week": 5
+    },
+    {
+      "player_id": "p206",
+      "name": "Ellis Stanfield",
+      "positions": [
+        "WR"
+      ],
+      "nfl_team": "STG",
+      "status": "",
+      "bye_week": 8
+    },
+    {
+      "player_id": "p207",
+      "name": "Ashton Juniper",
+      "positions": [
+        "WR"
+      ],
+      "nfl_team": "FLX",
+      "status": "",
+      "bye_week": 11
+    },
+    {
+      "player_id": "p208",
+      "name": "Dane Quarrymoor",
+      "positions": [
+        "TE"
+      ],
+      "nfl_team": "GLE",
+      "status": "",
+      "bye_week": 1
+    },
+    {
+      "player_id": "p209",
+      "name": "Nash Yarrow",
+      "positions": [
+        "TE"
+      ],
+      "nfl_team": "MTN",
+      "status": "",
+      "bye_week": 4
+    },
+    {
+      "player_id": "p210",
+      "name": "Rook Farrow",
+      "positions": [
+        "K"
+      ],
+      "nfl_team": "ZPH",
+      "status": "",
+      "bye_week": 7
+    },
+    {
+      "player_id": "p211",
+      "name": "Vance Fenwick",
+      "positions": [
+        "DEF"
+      ],
+      "nfl_team": "QRN",
+      "status": "",
+      "bye_week": 10
+    },
+    {
+      "player_id": "p300",
+      "name": "Kip Sable",
+      "positions": [
+        "QB"
+      ],
+      "nfl_team": "NVR",
+      "status": "",
+      "bye_week": 4
+    },
+    {
+      "player_id": "p301",
+      "name": "Otis Fairweather",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "OKS",
+      "status": "",
+      "bye_week": 7
+    },
+    {
+      "player_id": "p302",
+      "name": "Boone Crestfield",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "TDN",
+      "status": "",
+      "bye_week": 10
+    },
+    {
+      "player_id": "p303",
+      "name": "Reyes Grayling",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "WLK",
+      "status": "",
+      "bye_week": 13
+    },
+    {
+      "player_id": "p304",
+      "name": "Case Norwood",
+      "positions": [
+        "RB",
+        "WR"
+      ],
+      "nfl_team": "BRV",
+      "status": "",
+      "bye_week": 14
+    },
+    {
+      "player_id": "p305",
+      "name": "Wren Underhill",
+      "positions": [
+        "WR"
+      ],
+      "nfl_team": "STG",
+      "status": "",
+      "bye_week": 6
+    },
+    {
+      "player_id": "p306",
+      "name": "Tobin Cinderfall",
+      "positions": [
+        "WR"
+      ],
+      "nfl_team": "FLX",
+      "status": "",
+      "bye_week": 9
+    },
+    {
+      "player_id": "p307",
+      "name": "Duke Marsh",
+      "positions": [
+        "WR"
+      ],
+      "nfl_team": "GLE",
+      "status": "",
+      "bye_week": 12
+    },
+    {
+      "player_id": "p308",
+      "name": "Finch Calder",
+      "positions": [
+        "TE"
+      ],
+      "nfl_team": "MTN",
+      "status": "",
+      "bye_week": 2
+    },
+    {
+      "player_id": "p309",
+      "name": "Gale Corwin",
+      "positions": [
+        "TE"
+      ],
+      "nfl_team": "ZPH",
+      "status": "",
+      "bye_week": 5
+    },
+    {
+      "player_id": "p310",
+      "name": "Bram Vane",
+      "positions": [
+        "K"
+      ],
+      "nfl_team": "QRN",
+      "status": "",
+      "bye_week": 8
+    },
+    {
+      "player_id": "p311",
+      "name": "Cy Cragmoor",
+      "positions": [
+        "DEF"
+      ],
+      "nfl_team": "VXA",
+      "status": "",
+      "bye_week": 11
+    },
+    {
+      "player_id": "p400",
+      "name": "Elan Kingswell",
+      "positions": [
+        "QB"
+      ],
+      "nfl_team": "OKS",
+      "status": "",
+      "bye_week": 5
+    },
+    {
+      "player_id": "p401",
+      "name": "Frost Redshaw",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "TDN",
+      "status": "",
+      "bye_week": 8
+    },
+    {
+      "player_id": "p402",
+      "name": "Hollis Zephyrine",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "WLK",
+      "status": "",
+      "bye_week": 11
+    },
+    {
+      "player_id": "p403",
+      "name": "Ira Graystone",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "BRV",
+      "status": "",
+      "bye_week": 1
+    },
+    {
+      "player_id": "p404",
+      "name": "Joss Larkspur",
+      "positions": [
+        "RB"
+      ],
+      "nfl_team": "STG",
+      "status": "",
+      "bye_week": 4
+    },
+    {
+      "player_id": "p405",
+      "name": "Kit Thistle",
+      "positions": [
+        "WR"
+      ],
+      "nfl_team": "FLX",
+      "status": "",
+      "bye_week": 7
+    },
+    {
+      "player_id": "p406",
+      "name": "Locke Nightshade",
+      "positions": [
+        "WR"
+      ],
+      "nfl_team": "GLE",
+      "status": "",
+      "bye_week": 10
+    },
+    {
+      "player_id": "p407",
+      "name": "Mace Holloway",
+      "positions": [
+        "WR"
+      ],
+      "nfl_team": "MTN",
+      "status": "",
+      "bye_week": 13
+    },
+    {
+      "player_id": "p408",
+      "name": "Niles Hartwell",
+      "positions": [
+        "TE"
+      ],
+      "nfl_team": "ZPH",
+      "status": "",
+      "bye_week": 14
+    },
+    {
+      "player_id": "p409",
+      "name": "Orin Oakcastle",
+      "positions": [
+        "TE"
+      ],
+      "nfl_team": "QRN",
+      "status": "",
+      "bye_week": 6
+    },
+    {
+      "player_id": "p410",
+      "name": "Pace Vesper",
+      "positions": [
+        "K"
+      ],
+      "nfl_team": "VXA",
+      "status": "",
+      "bye_week": 9
+    },
+    {
+      "player_id": "p411",
+      "name": "Quill Dunraven",
+      "positions": [
+        "DEF"
+      ],
+      "nfl_team": "NVR",
+      "status": "",
+      "bye_week": 12
+    }
+  ]
+}

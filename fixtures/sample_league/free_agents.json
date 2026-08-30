@@ -1,0 +1,44 @@
+{
+  "free_agents": [
+    {
+      "player_id": "f2001",
+      "percent_owned": 41
+    },
+    {
+      "player_id": "f2002",
+      "percent_owned": 55
+    },
+    {
+      "player_id": "f2003",
+      "percent_owned": 22
+    },
+    {
+      "player_id": "f2004",
+      "percent_owned": 9
+    },
+    {
+      "player_id": "f2005",
+      "percent_owned": 18
+    },
+    {
+      "player_id": "f2006",
+      "percent_owned": 6
+    },
+    {
+      "player_id": "f2007",
+      "percent_owned": 12
+    },
+    {
+      "player_id": "f2008",
+      "percent_owned": 15
+    },
+    {
+      "player_id": "f2009",
+      "percent_owned": 33
+    },
+    {
+      "player_id": "f2010",
+      "percent_owned": 27
+    }
+  ]
+}

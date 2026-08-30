@@ -1,0 +1,1100 @@
+{
+  "projections": [
+    {
+      "week": 2,
+      "player_id": "p1001",
+      "stats": {
+        "passing_yards": 302.5,
+        "passing_touchdowns": 2.2,
+        "interceptions": 1.1,
+        "rushing_yards": 60.5
+      }
+    },
+    {
+      "week": 2,
+      "player_id": "p1002",
+      "stats": {
+        "rushing_yards": 96.8,
+        "receptions": 1.1
+      }
+    },
+    {
+      "week": 2,
+      "player_id": "p1003",
+      "stats": {
+        "rushing_yards": 101.2,
+        "receptions": 2.2,
+        "receiving_yards": 11.0
+      }
+    },
+    {
+      "week": 2,
+      "player_id": "p1004",
+      "stats": {
+        "receptions": 5.5,
+        "receiving_yards": 80.3
+      }
+    },
+    {
+      "week": 2,
+      "player_id": "p1005",
+      "stats": {
+        "receptions": 3.3,
+        "receiving_yards": 63.8
+      }
+    },
+    {
+      "week": 2,
+      "player_id": "p1006",
+      "stats": {
+        "receptions": 4.4,
+        "receiving_yards": 79.2
+      }
+    },
+    {
+      "week": 2,
+      "player_id": "p1007",
+      "stats": {
+        "receptions": 2.2,
+        "receiving_yards": 31.9
+      }
+    },
+    {
+      "week": 2,
+      "player_id": "p1008",
+      "stats": {
+        "field_goals_made": 3.3
+      }
+    },
+    {
+      "week": 2,
+      "player_id": "p1009",
+      "stats": {
+        "defense_sacks": 2.2,
+        "defense_interceptions": 1.1,
+        "defense_fumble_recoveries": 0.55,
+        "defense_points_allowed": 15.0
+      }
+    },
+    {
+      "week": 2,
+      "player_id": "p1010",
+      "stats": {
+        "rushing_yards": 82.5,
+        "receptions": 3.3,
+        "receiving_yards": 16.5
+      }
+    },
+    {
+      "week": 2,
+      "player_id": "p1011",
+      "stats": {
+        "receptions": 4.4,
+        "receiving_yards": 75.9
+      }
+    },
+    {
+      "week": 2,
+      "player_id": "p1012",
+      "stats": {
+        "rushing_yards": 47.3
+      }
+    },
+    {
+      "week": 2,
+      "player_id": "p1013",
+      "stats": {
+        "rushing_yards": 22.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p1001",
+      "stats": {
+        "passing_yards": 275.0,
+        "passing_touchdowns": 2.0,
+        "interceptions": 1.0,
+        "rushing_yards": 55.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p1002",
+      "stats": {
+        "rushing_yards": 88.0,
+        "receptions": 1.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p1003",
+      "stats": {
+        "rushing_yards": 92.0,
+        "receptions": 2.0,
+        "receiving_yards": 10.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p1004",
+      "stats": {
+        "receptions": 5.0,
+        "receiving_yards": 73.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p1005",
+      "stats": {
+        "receptions": 3.0,
+        "receiving_yards": 58.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p1006",
+      "stats": {
+        "receptions": 4.0,
+        "receiving_yards": 72.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p1007",
+      "stats": {
+        "receptions": 2.0,
+        "receiving_yards": 29.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p1008",
+      "stats": {
+        "field_goals_made": 3.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p1009",
+      "stats": {
+        "defense_sacks": 2.0,
+        "defense_interceptions": 1.0,
+        "defense_fumble_recoveries": 0.5,
+        "defense_points_allowed": 15.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p1010",
+      "stats": {
+        "rushing_yards": 75.0,
+        "receptions": 3.0,
+        "receiving_yards": 15.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p1011",
+      "stats": {
+        "receptions": 4.0,
+        "receiving_yards": 69.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p1012",
+      "stats": {
+        "rushing_yards": 43.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p1013",
+      "stats": {
+        "rushing_yards": 20.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "f2001",
+      "stats": {
+        "receptions": 3.0,
+        "receiving_yards": 40.0,
+        "targets": 5.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "f2002",
+      "stats": {
+        "rushing_yards": 65.0,
+        "receptions": 2.0,
+        "receiving_yards": 22.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "f2003",
+      "stats": {
+        "receptions": 2.0,
+        "receiving_yards": 11.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "f2004",
+      "stats": {
+        "rushing_yards": 15.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "f2005",
+      "stats": {
+        "receptions": 2.0,
+        "receiving_yards": 20.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "f2006",
+      "stats": {
+        "passing_yards": 275.0,
+        "passing_touchdowns": 1.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "f2007",
+      "stats": {
+        "field_goals_made": 2.0,
+        "extra_points_made": 1.5
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "f2008",
+      "stats": {
+        "defense_sacks": 1.0,
+        "defense_interceptions": 1.0,
+        "defense_fumble_recoveries": 1.0,
+        "defense_points_allowed": 24.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "f2009",
+      "stats": {
+        "receptions": 4.0,
+        "receiving_yards": 41.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "f2010",
+      "stats": {
+        "rushing_yards": 65.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p200",
+      "stats": {
+        "passing_yards": 242.0,
+        "passing_touchdowns": 1.0,
+        "interceptions": 0.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p201",
+      "stats": {
+        "rushing_yards": 53.0,
+        "receptions": 1.0,
+        "receiving_yards": 5.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p202",
+      "stats": {
+        "rushing_yards": 56.0,
+        "receptions": 1.0,
+        "receiving_yards": 5.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p203",
+      "stats": {
+        "rushing_yards": 59.0,
+        "receptions": 1.0,
+        "receiving_yards": 5.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p204",
+      "stats": {
+        "rushing_yards": 62.0,
+        "receptions": 1.0,
+        "receiving_yards": 5.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p205",
+      "stats": {
+        "receptions": 4.0,
+        "receiving_yards": 48.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p206",
+      "stats": {
+        "receptions": 2.0,
+        "receiving_yards": 52.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p207",
+      "stats": {
+        "receptions": 3.0,
+        "receiving_yards": 52.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p208",
+      "stats": {
+        "receptions": 1.0,
+        "receiving_yards": 32.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p209",
+      "stats": {
+        "receptions": 2.0,
+        "receiving_yards": 34.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p210",
+      "stats": {
+        "field_goals_made": 1.0,
+        "extra_points_made": 2.3
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p211",
+      "stats": {
+        "defense_sacks": 1.0,
+        "defense_interceptions": 1.0,
+        "defense_points_allowed": 10.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p300",
+      "stats": {
+        "passing_yards": 248.0,
+        "passing_touchdowns": 1.0,
+        "interceptions": 0.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p301",
+      "stats": {
+        "rushing_yards": 61.0,
+        "receptions": 1.0,
+        "receiving_yards": 5.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p302",
+      "stats": {
+        "rushing_yards": 64.0,
+        "receptions": 1.0,
+        "receiving_yards": 5.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p303",
+      "stats": {
+        "rushing_yards": 66.0,
+        "receptions": 1.0,
+        "receiving_yards": 5.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p304",
+      "stats": {
+        "rushing_yards": 67.0,
+        "receptions": 1.0,
+        "receiving_yards": 5.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p305",
+      "stats": {
+        "receptions": 4.0,
+        "receiving_yards": 58.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p306",
+      "stats": {
+        "receptions": 2.0,
+        "receiving_yards": 54.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p307",
+      "stats": {
+        "receptions": 3.0,
+        "receiving_yards": 64.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p308",
+      "stats": {
+        "receptions": 1.0,
+        "receiving_yards": 35.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p309",
+      "stats": {
+        "receptions": 2.0,
+        "receiving_yards": 36.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p310",
+      "stats": {
+        "field_goals_made": 2.0,
+        "extra_points_made": 2.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p311",
+      "stats": {
+        "defense_sacks": 2.2,
+        "defense_interceptions": 1.0,
+        "defense_points_allowed": 10.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p400",
+      "stats": {
+        "passing_yards": 254.0,
+        "passing_touchdowns": 1.0,
+        "interceptions": 0.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p401",
+      "stats": {
+        "rushing_yards": 71.0,
+        "receptions": 1.0,
+        "receiving_yards": 5.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p402",
+      "stats": {
+        "rushing_yards": 73.0,
+        "receptions": 1.0,
+        "receiving_yards": 5.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p403",
+      "stats": {
+        "rushing_yards": 74.0,
+        "receptions": 1.0,
+        "receiving_yards": 5.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p404",
+      "stats": {
+        "rushing_yards": 75.0,
+        "receptions": 1.0,
+        "receiving_yards": 5.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p405",
+      "stats": {
+        "receptions": 4.0,
+        "receiving_yards": 66.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p406",
+      "stats": {
+        "receptions": 2.0,
+        "receiving_yards": 77.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p407",
+      "stats": {
+        "receptions": 3.0,
+        "receiving_yards": 73.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p408",
+      "stats": {
+        "receptions": 1.0,
+        "receiving_yards": 40.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p409",
+      "stats": {
+        "receptions": 2.0,
+        "receiving_yards": 39.0
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p410",
+      "stats": {
+        "field_goals_made": 1.0,
+        "extra_points_made": 2.6
+      }
+    },
+    {
+      "week": 3,
+      "player_id": "p411",
+      "stats": {
+        "defense_sacks": 3.1,
+        "defense_interceptions": 1.0,
+        "defense_points_allowed": 10.0
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p1001",
+      "stats": {
+        "passing_yards": 233.75,
+        "passing_touchdowns": 1.7,
+        "interceptions": 0.85,
+        "rushing_yards": 46.75
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p1002",
+      "stats": {
+        "rushing_yards": 74.8,
+        "receptions": 0.85
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p1003",
+      "stats": {
+        "rushing_yards": 78.2,
+        "receptions": 1.7,
+        "receiving_yards": 8.5
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p1004",
+      "stats": {
+        "receptions": 4.25,
+        "receiving_yards": 62.05
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p1005",
+      "stats": {
+        "receptions": 2.55,
+        "receiving_yards": 49.3
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p1006",
+      "stats": {
+        "receptions": 3.4,
+        "receiving_yards": 61.2
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p1007",
+      "stats": {
+        "receptions": 1.7,
+        "receiving_yards": 24.65
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p1008",
+      "stats": {
+        "field_goals_made": 2.55
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p1009",
+      "stats": {
+        "defense_sacks": 1.7,
+        "defense_interceptions": 0.85,
+        "defense_fumble_recoveries": 0.42,
+        "defense_points_allowed": 15.0
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p1010",
+      "stats": {
+        "rushing_yards": 63.75,
+        "receptions": 2.55,
+        "receiving_yards": 12.75
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p1011",
+      "stats": {
+        "receptions": 3.4,
+        "receiving_yards": 58.65
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p1012",
+      "stats": {
+        "rushing_yards": 36.55
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p1013",
+      "stats": {
+        "rushing_yards": 17.0
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "f2001",
+      "stats": {
+        "receptions": 2.55,
+        "receiving_yards": 34.0
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "f2002",
+      "stats": {
+        "rushing_yards": 55.25,
+        "receptions": 1.7,
+        "receiving_yards": 18.7
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "f2003",
+      "stats": {
+        "receptions": 1.7,
+        "receiving_yards": 9.35
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "f2004",
+      "stats": {
+        "rushing_yards": 12.75
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "f2005",
+      "stats": {
+        "receptions": 1.7,
+        "receiving_yards": 17.0
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "f2006",
+      "stats": {
+        "passing_yards": 233.75,
+        "passing_touchdowns": 0.85
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "f2007",
+      "stats": {
+        "field_goals_made": 1.7,
+        "extra_points_made": 1.27
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "f2008",
+      "stats": {
+        "defense_sacks": 0.85,
+        "defense_interceptions": 0.85,
+        "defense_fumble_recoveries": 0.85,
+        "defense_points_allowed": 24.0
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "f2009",
+      "stats": {
+        "receptions": 3.4,
+        "receiving_yards": 34.85
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "f2010",
+      "stats": {
+        "rushing_yards": 55.25
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p200",
+      "stats": {
+        "passing_yards": 205.7,
+        "passing_touchdowns": 0.85,
+        "interceptions": 0.0
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p201",
+      "stats": {
+        "rushing_yards": 45.05,
+        "receptions": 0.85,
+        "receiving_yards": 4.25
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p202",
+      "stats": {
+        "rushing_yards": 47.6,
+        "receptions": 0.85,
+        "receiving_yards": 4.25
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p203",
+      "stats": {
+        "rushing_yards": 50.15,
+        "receptions": 0.85,
+        "receiving_yards": 4.25
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p204",
+      "stats": {
+        "rushing_yards": 52.7,
+        "receptions": 0.85,
+        "receiving_yards": 4.25
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p205",
+      "stats": {
+        "receptions": 3.4,
+        "receiving_yards": 40.8
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p206",
+      "stats": {
+        "receptions": 1.7,
+        "receiving_yards": 44.2
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p207",
+      "stats": {
+        "receptions": 2.55,
+        "receiving_yards": 44.2
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p208",
+      "stats": {
+        "receptions": 0.85,
+        "receiving_yards": 27.2
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p209",
+      "stats": {
+        "receptions": 1.7,
+        "receiving_yards": 28.9
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p210",
+      "stats": {
+        "field_goals_made": 0.85,
+        "extra_points_made": 1.95
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p211",
+      "stats": {
+        "defense_sacks": 0.85,
+        "defense_interceptions": 0.85,
+        "defense_points_allowed": 10.0
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p300",
+      "stats": {
+        "passing_yards": 210.8,
+        "passing_touchdowns": 0.85,
+        "interceptions": 0.0
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p301",
+      "stats": {
+        "rushing_yards": 51.85,
+        "receptions": 0.85,
+        "receiving_yards": 4.25
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p302",
+      "stats": {
+        "rushing_yards": 54.4,
+        "receptions": 0.85,
+        "receiving_yards": 4.25
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p303",
+      "stats": {
+        "rushing_yards": 56.1,
+        "receptions": 0.85,
+        "receiving_yards": 4.25
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p304",
+      "stats": {
+        "rushing_yards": 56.95,
+        "receptions": 0.85,
+        "receiving_yards": 4.25
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p305",
+      "stats": {
+        "receptions": 3.4,
+        "receiving_yards": 49.3
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p306",
+      "stats": {
+        "receptions": 1.7,
+        "receiving_yards": 45.9
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p307",
+      "stats": {
+        "receptions": 2.55,
+        "receiving_yards": 54.4
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p308",
+      "stats": {
+        "receptions": 0.85,
+        "receiving_yards": 29.75
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p309",
+      "stats": {
+        "receptions": 1.7,
+        "receiving_yards": 30.6
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p310",
+      "stats": {
+        "field_goals_made": 1.7,
+        "extra_points_made": 1.7
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p311",
+      "stats": {
+        "defense_sacks": 1.87,
+        "defense_interceptions": 0.85,
+        "defense_points_allowed": 10.0
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p400",
+      "stats": {
+        "passing_yards": 215.9,
+        "passing_touchdowns": 0.85,
+        "interceptions": 0.0
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p401",
+      "stats": {
+        "rushing_yards": 60.35,
+        "receptions": 0.85,
+        "receiving_yards": 4.25
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p402",
+      "stats": {
+        "rushing_yards": 62.05,
+        "receptions": 0.85,
+        "receiving_yards": 4.25
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p403",
+      "stats": {
+        "rushing_yards": 62.9,
+        "receptions": 0.85,
+        "receiving_yards": 4.25
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p404",
+      "stats": {
+        "rushing_yards": 63.75,
+        "receptions": 0.85,
+        "receiving_yards": 4.25
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p405",
+      "stats": {
+        "receptions": 3.4,
+        "receiving_yards": 56.1
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p406",
+      "stats": {
+        "receptions": 1.7,
+        "receiving_yards": 65.45
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p407",
+      "stats": {
+        "receptions": 2.55,
+        "receiving_yards": 62.05
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p408",
+      "stats": {
+        "receptions": 0.85,
+        "receiving_yards": 34.0
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p409",
+      "stats": {
+        "receptions": 1.7,
+        "receiving_yards": 33.15
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p410",
+      "stats": {
+        "field_goals_made": 0.85,
+        "extra_points_made": 2.21
+      }
+    },
+    {
+      "week": 4,
+      "player_id": "p411",
+      "stats": {
+        "defense_sacks": 2.63,
+        "defense_interceptions": 0.85,
+        "defense_points_allowed": 10.0
+      }
+    }
+  ]
+}

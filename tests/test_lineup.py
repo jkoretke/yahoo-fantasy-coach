@@ -327,3 +327,136 @@ def test_too_many_starting_slot_units_raises(league):
 
     with pytest.raises(EngineError):
         lineup.optimal_lineup(inflated, "t1", 3)
+
+
+# ---------------------------------------------------------------------------
+# lineup_changes: no phantom sits, no negative gains, sums reconcile
+# ---------------------------------------------------------------------------
+
+
+def test_lineup_changes_never_lists_a_player_as_both_start_and_sit(league):
+    # A player who starts under both current and optimal must never be
+    # reported as a change at all, regardless of which literal unit index
+    # each solve happened to place him in (two same slot units are
+    # interchangeable, see the module docstring on lineup_changes).
+    for team_id in ["t1", "t2", "t3", "t4"]:
+        for week in [3, 4]:
+            optimal = lineup.optimal_lineup(league, team_id, week)
+            current = lineup.current_lineup(league, team_id, week)
+            changes = lineup.lineup_changes(current, optimal)
+
+            starts = {c["start_player_id"] for c in changes}
+            sits = {c["sit_player_id"] for c in changes if c["sit_player_id"] is not None}
+            assert not (starts & sits), (team_id, week, changes)
+
+
+def test_lineup_changes_never_negative_and_sums_to_the_total_gap(league):
+    for team_id in ["t1", "t2", "t3", "t4"]:
+        for week in [3, 4]:
+            optimal = lineup.optimal_lineup(league, team_id, week)
+            current = lineup.current_lineup(league, team_id, week)
+            changes = lineup.lineup_changes(current, optimal)
+
+            for change in changes:
+                assert change["points_gained"] >= 0, (team_id, week, change)
+
+            total_gained = round(sum(c["points_gained"] for c in changes), 2)
+            expected = round(optimal["total_points"] - current["total_points"], 2)
+            assert total_gained == pytest.approx(expected, abs=1e-6), (team_id, week)
+
+
+def test_lineup_changes_t1_week3_reproduces_the_known_phantom_sit_bug(league):
+    # This is the exact case QA reported: a manager's two RBs (p1002 at
+    # unit 0, p1003 at unit 1) diffed strictly by unit index against the
+    # optimal solve's own arbitrary unit order used to say start p1003 and
+    # sit p1003 in the same list, with a negative points_gained alongside
+    # it. p1003 starts in both current and optimal, so it must not appear
+    # in the result at all.
+    optimal = lineup.optimal_lineup(league, "t1", 3)
+    current = lineup.current_lineup(league, "t1", 3)
+    changes = lineup.lineup_changes(current, optimal)
+
+    for change in changes:
+        assert change["start_player_id"] != "p1003"
+        assert change["sit_player_id"] != "p1003"
+
+
+def test_lineup_changes_empty_when_current_is_optimal_with_units_swapped(league):
+    # Simulate a manager whose lineup is already point optimal, but whose
+    # two RB starters happen to sit in the opposite unit order from
+    # whichever order the bitmask solver picked. lineup_changes must not
+    # recommend two pointless swaps in that case; it must return [].
+    optimal = lineup.optimal_lineup(league, "t1", 3)
+    swapped = copy.deepcopy(optimal)
+
+    rb_indices = [
+        index for index, unit in enumerate(swapped["assignments"]) if unit["slot"] == "RB"
+    ]
+    assert len(rb_indices) == 2
+    first, second = rb_indices
+    for key in ("player_id", "name", "positions", "points", "startable"):
+        swapped["assignments"][first][key], swapped["assignments"][second][key] = (
+            swapped["assignments"][second][key],
+            swapped["assignments"][first][key],
+        )
+
+    assert lineup.lineup_changes(swapped, optimal) == []
+
+
+# ---------------------------------------------------------------------------
+# lineup_changes: the toss up band
+# ---------------------------------------------------------------------------
+
+
+def test_lineup_changes_flags_a_toss_up_inside_the_band_but_not_outside(league):
+    optimal = lineup.optimal_lineup(league, "t1", 3)
+    current = lineup.current_lineup(league, "t1", 3)
+    changes = lineup.lineup_changes(current, optimal)
+
+    inside = [c for c in changes if 0 < c["points_gained"] < lineup.DEFAULT_TOSS_UP_MARGIN_POINTS]
+    outside = [c for c in changes if c["points_gained"] >= lineup.DEFAULT_TOSS_UP_MARGIN_POINTS]
+    assert inside, changes
+    assert outside, changes
+
+    for change in inside:
+        assert change["toss_up"] is True
+        assert change["toss_up_margin"] == lineup.DEFAULT_TOSS_UP_MARGIN_POINTS
+        option_ids = {option["player_id"] for option in change["toss_up_options"]}
+        assert option_ids == {change["start_player_id"], change["sit_player_id"]}
+
+    for change in outside:
+        assert "toss_up" not in change
+        assert "toss_up_options" not in change
+
+
+def test_lineup_changes_toss_up_margin_is_configurable(league):
+    optimal = lineup.optimal_lineup(league, "t1", 3)
+    current = lineup.current_lineup(league, "t1", 3)
+
+    # A margin of 0 flags nothing, since every real change has a strictly
+    # positive points_gained and the band check is strict on both ends.
+    changes = lineup.lineup_changes(current, optimal, toss_up_margin_points=0.0)
+    assert all("toss_up" not in c for c in changes)
+
+    # A very wide margin flags every change that is not already zero.
+    changes = lineup.lineup_changes(current, optimal, toss_up_margin_points=100.0)
+    assert all(c.get("toss_up") is True for c in changes)
+
+
+# ---------------------------------------------------------------------------
+# is_startable: SUSP excludes, Q does not
+# ---------------------------------------------------------------------------
+
+
+def test_is_startable_false_for_susp_true_for_questionable(league):
+    # p204 (t2 bench) carries status "SUSP" and p207 (t2 bench) carries
+    # status "Q" in the fixture, so both branches of EXCLUDED_STATUSES'
+    # "flagged but not necessarily excluded" behavior are exercised: SUSP
+    # benches him regardless of projection, Q does not bench anyone.
+    susp_player = fixtures.get_player(league, "p204")
+    assert susp_player["status"] == "SUSP"
+    assert lineup.is_startable(susp_player, 3) is False
+
+    questionable_player = fixtures.get_player(league, "p207")
+    assert questionable_player["status"] == "Q"
+    assert lineup.is_startable(questionable_player, 3) is True

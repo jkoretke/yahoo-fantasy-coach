@@ -184,8 +184,12 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         "--waiver-type",
         dest="waiver_type",
         default=None,
-        choices=("faab", "priority"),
-        help="Override the fixture's waiver type, to demo either branch.",
+        help=(
+            "Override the fixture's waiver type, to demo either branch "
+            "(faab or priority). Any value is accepted here; an "
+            "unrecognized one is reported as a single error line and exit "
+            "code 1, not an argument parsing failure."
+        ),
     )
     parser.add_argument(
         "--runs-root",

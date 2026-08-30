@@ -35,7 +35,10 @@ from engine.fixtures import free_agent_ids, get_player, get_team
 # EXCLUDED_STATUSES is imported (not used directly below) so the status set
 # that keeps a player out of a starting lineup is never re-declared here;
 # is_startable is used in drop_candidates' fallback path.
-from engine.lineup import EXCLUDED_STATUSES, is_startable, optimal_lineup
+# DEFAULT_TOSS_UP_MARGIN_POINTS is imported rather than redeclared here, so
+# the whole engine shares docs/plan.md's one toss up margin instead of
+# carrying a second, easy to drift, copy of the same number.
+from engine.lineup import DEFAULT_TOSS_UP_MARGIN_POINTS, EXCLUDED_STATUSES, is_startable, optimal_lineup
 from engine.scoring import projected_points_by_player
 
 # The bar a single week projected points gain must clear to be worth
@@ -260,6 +263,17 @@ def rank_waiver_targets(league: dict[str, Any], team_id: str, week: int) -> dict
     later phase can weigh those factors without this function's callers
     needing to change. The result also carries "waiver_position" and
     "required_gain" for team_id, and no target here carries a "bid" key.
+
+    Priority also flags docs/plan.md's toss up band: when a target's
+    points_gained sits strictly within DEFAULT_TOSS_UP_MARGIN_POINTS of
+    required_gain either way, the claim/skip line is close enough that a
+    beat writer note should be allowed to break it. That target keeps
+    whichever verdict the threshold above computed (Python still makes
+    every call) but additionally carries "toss_up": true, "toss_up_margin"
+    and "toss_up_options": ["claim", "skip"]. A target outside that band
+    carries none of those three keys and its verdict is final. FAAB never
+    carries them either, since FAAB never declines a real upgrade in the
+    first place, so there is no close claim/skip line to flag.
     """
     waiver_type = league["settings"]["waiver"]["type"]
     if waiver_type not in _VALID_WAIVER_TYPES:
@@ -303,6 +317,10 @@ def rank_waiver_targets(league: dict[str, Any], team_id: str, week: int) -> dict
             target["required_gain"] = required_gain
             target["priority_position"] = position
             target["verdict"] = "claim" if claim["points_gained"] >= required_gain else "skip"
+            if abs(claim["points_gained"] - required_gain) < DEFAULT_TOSS_UP_MARGIN_POINTS:
+                target["toss_up"] = True
+                target["toss_up_margin"] = DEFAULT_TOSS_UP_MARGIN_POINTS
+                target["toss_up_options"] = ["claim", "skip"]
             targets.append(target)
 
         result["waiver_position"] = position

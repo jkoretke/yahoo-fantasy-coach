@@ -10,11 +10,11 @@ respecting each unit's eligible_positions, and compares that optimal
 lineup against whatever lineup the manager actually has selected right
 now.
 
-Public names. engine.waivers imports is_startable and EXCLUDED_STATUSES
-directly, so neither is renamed and the status set is never re-inlined
-elsewhere:
-    EXCLUDED_STATUSES, MAX_SLOT_UNITS, is_startable, optimal_lineup,
-    current_lineup, lineup_changes.
+Public names. engine.waivers imports is_startable, EXCLUDED_STATUSES and
+DEFAULT_TOSS_UP_MARGIN_POINTS directly, so none of the three is renamed and
+neither the status set nor the margin is ever re-inlined elsewhere:
+    EXCLUDED_STATUSES, MAX_SLOT_UNITS, DEFAULT_TOSS_UP_MARGIN_POINTS,
+    is_startable, optimal_lineup, current_lineup, lineup_changes.
 """
 from __future__ import annotations
 
@@ -39,6 +39,14 @@ EXCLUDED_STATUSES = frozenset({"O", "IR", "SUSP"})
 # comes close to this many starting units; it exists as a guard rail against
 # a misconfigured fixture or settings file blowing up the solve.
 MAX_SLOT_UNITS = 16
+
+# The one shared toss up margin for the whole engine (docs/plan.md: "one
+# shared default for start/sit, matchup, and waivers, not three separate
+# numbers to keep straight"). A later phase reads the real value from
+# config/league.yaml; this module constant is the Phase 1 default until
+# that config layer exists. engine.waivers imports this name rather than
+# declaring its own, so the band is never defined twice.
+DEFAULT_TOSS_UP_MARGIN_POINTS = 2.0
 
 
 def is_startable(player: dict[str, Any], week: int) -> bool:
@@ -327,35 +335,138 @@ def current_lineup(
     }
 
 
-def lineup_changes(current: dict[str, Any], optimal: dict[str, Any]) -> list[dict[str, Any]]:
+def _pair_remaining_units(
+    remaining_current: list[dict[str, Any]], remaining_optimal: list[dict[str, Any]]
+) -> list[tuple[dict[str, Any], dict[str, Any]]]:
+    """Pair leftover current units with leftover optimal units for the diff.
+
+    Grouped by slot name first, since a same-slot-name pairing produces the
+    more sensible label (a RB you are sitting paired with the RB replacing
+    him, not a RB paired with a kicker). Within and across groups, both
+    sides are walked in ascending points order before pairing, so a cheap
+    current occupant is matched against a cheap optimal replacement rather
+    than against the most expensive one; this is what keeps an individual
+    pair's points_gained from going negative even though the overall
+    optimal total always exceeds the current total.
+
+    A slot name whose two sides do not have equal counts (a flex eligible
+    player who is a starter in both current and optimal, but under two
+    different slot names, shifts the balance by one on each side) leaves a
+    leftover on each side; those leftovers are pooled across slot names and
+    paired the same way, so every remaining unit is still accounted for.
+    """
+    current_by_slot: dict[str, list[dict[str, Any]]] = {}
+    for unit in remaining_current:
+        current_by_slot.setdefault(unit["slot"], []).append(unit)
+    optimal_by_slot: dict[str, list[dict[str, Any]]] = {}
+    for unit in remaining_optimal:
+        optimal_by_slot.setdefault(unit["slot"], []).append(unit)
+
+    def by_points_ascending(unit: dict[str, Any]) -> tuple[float, str]:
+        return (unit["points"], unit["player_id"] or "")
+
+    pairs: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    leftover_current: list[dict[str, Any]] = []
+    leftover_optimal: list[dict[str, Any]] = []
+
+    for slot_name, current_units in current_by_slot.items():
+        optimal_units = optimal_by_slot.pop(slot_name, [])
+        current_units = sorted(current_units, key=by_points_ascending)
+        optimal_units = sorted(optimal_units, key=by_points_ascending)
+        matched = min(len(current_units), len(optimal_units))
+        for index in range(matched):
+            pairs.append((current_units[index], optimal_units[index]))
+        leftover_current.extend(current_units[matched:])
+        leftover_optimal.extend(optimal_units[matched:])
+
+    for optimal_units in optimal_by_slot.values():
+        leftover_optimal.extend(optimal_units)
+
+    leftover_current.sort(key=by_points_ascending)
+    leftover_optimal.sort(key=by_points_ascending)
+    pairs.extend(zip(leftover_current, leftover_optimal))
+    return pairs
+
+
+def lineup_changes(
+    current: dict[str, Any],
+    optimal: dict[str, Any],
+    toss_up_margin_points: float = DEFAULT_TOSS_UP_MARGIN_POINTS,
+) -> list[dict[str, Any]]:
     """Return the start/sit verdicts turning current into optimal.
 
-    One dict per starting slot unit where the assigned player differs,
-    shaped {"slot", "unit", "start_player_id", "start_name",
-    "sit_player_id", "sit_name", "points_gained"}. points_gained is
-    round_points(the optimal assignment's counted points minus the current
-    assignment's counted points), using the same counted "points" value
-    each assignment already reports, so benching a non startable player
-    (whose current assignment always counts 0.0) shows his full slot cost
-    rather than his raw projection. Sorted by points_gained descending,
-    then slot, then unit. Returns [] when current is already optimal.
+    A player who is a starter in BOTH current and optimal is never reported
+    as a change, even when the two solves happened to place him in
+    different units of the same slot (two RBs with identical eligible
+    positions can land in either order out of the bitmask solver, since
+    which literal unit index each gets is arbitrary relative to roster
+    order). Diffing strictly by unit index instead of by this "is he
+    starting either way" check would report a phantom sit for a player who
+    is not actually being benched, alongside a phantom start for a player
+    who is not actually a new addition, including a nonsensical negative
+    points_gained on one of the pair. Pinning shared starters first, then
+    pairing only the genuinely differing units (_pair_remaining_units
+    above), is what keeps every reported points_gained the true cost of a
+    real bench decision.
+
+    One dict per genuine change, shaped {"slot", "unit", "start_player_id",
+    "start_name", "sit_player_id", "sit_name", "points_gained"}.
+    points_gained is round_points(the optimal assignment's counted points
+    minus the current assignment's counted points), using the same counted
+    "points" value each assignment already reports, so benching a non
+    startable player (whose current assignment always counts 0.0) shows his
+    full slot cost rather than his raw projection. No player_id ever
+    appears as both a start_player_id and a sit_player_id in the returned
+    list, no points_gained is ever negative, and the total of points_gained
+    across every entry always equals optimal total_points minus current
+    total_points, since a pinned shared starter contributes the same
+    counted points on both sides and so nets to zero. Sorted by
+    points_gained descending, then slot, then unit. Returns [] when current
+    is already optimal, including when it differs from optimal only by
+    which unit index a shared starter happens to occupy.
+
+    toss_up_margin_points is docs/plan.md's shared toss up band (see
+    DEFAULT_TOSS_UP_MARGIN_POINTS). An entry whose points_gained falls
+    strictly inside that margin is a call close enough that a beat writer
+    note should be allowed to break it: it is tagged "toss_up": true and
+    gains "toss_up_margin" and "toss_up_options" (the two players the pick
+    is between, start then sit, each {"player_id", "name"}). engine.waivers
+    tags its own toss ups with the same three key names, so
+    engine.prose_gate (a later phase) has one shape to check rather than
+    two. An entry outside the band is left exactly as it always was: no
+    toss_up key at all, and the verdict is final.
     """
+    pinned_players = set(current["starter_ids"]) & set(optimal["starter_ids"])
+
+    remaining_current = [
+        unit for unit in current["assignments"] if unit["player_id"] not in pinned_players
+    ]
+    remaining_optimal = [
+        unit for unit in optimal["assignments"] if unit["player_id"] not in pinned_players
+    ]
+
     changes: list[dict[str, Any]] = []
-    for current_unit, optimal_unit in zip(current["assignments"], optimal["assignments"]):
+    for current_unit, optimal_unit in _pair_remaining_units(remaining_current, remaining_optimal):
         if current_unit["player_id"] == optimal_unit["player_id"]:
             continue
         points_gained = round_points(optimal_unit["points"] - current_unit["points"])
-        changes.append(
-            {
-                "slot": optimal_unit["slot"],
-                "unit": optimal_unit["unit"],
-                "start_player_id": optimal_unit["player_id"],
-                "start_name": optimal_unit["name"],
-                "sit_player_id": current_unit["player_id"],
-                "sit_name": current_unit["name"],
-                "points_gained": points_gained,
-            }
-        )
+        change: dict[str, Any] = {
+            "slot": optimal_unit["slot"],
+            "unit": optimal_unit["unit"],
+            "start_player_id": optimal_unit["player_id"],
+            "start_name": optimal_unit["name"],
+            "sit_player_id": current_unit["player_id"],
+            "sit_name": current_unit["name"],
+            "points_gained": points_gained,
+        }
+        if 0 < points_gained < toss_up_margin_points:
+            change["toss_up"] = True
+            change["toss_up_margin"] = toss_up_margin_points
+            change["toss_up_options"] = [
+                {"player_id": optimal_unit["player_id"], "name": optimal_unit["name"]},
+                {"player_id": current_unit["player_id"], "name": current_unit["name"]},
+            ]
+        changes.append(change)
 
     changes.sort(key=lambda change: (-change["points_gained"], change["slot"], change["unit"]))
     return changes

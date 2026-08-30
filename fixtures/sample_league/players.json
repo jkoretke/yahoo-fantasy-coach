@@ -279,7 +279,7 @@
         "RB"
       ],
       "nfl_team": "WLK",
-      "status": "",
+      "status": "SUSP",
       "bye_week": 2
     },
     {
@@ -309,7 +309,7 @@
         "WR"
       ],
       "nfl_team": "FLX",
-      "status": "",
+      "status": "Q",
       "bye_week": 11
     },
     {

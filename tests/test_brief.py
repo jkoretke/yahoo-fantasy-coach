@@ -256,6 +256,23 @@ def test_main_waiver_type_priority(capsys):
     assert parsed["league"]["waiver_type"] == "priority"
 
 
+def test_main_invalid_waiver_type_reports_one_stderr_line_no_traceback(capsys):
+    # --waiver-type must not use argparse choices=: a bad value has to fail
+    # the same way an invalid --routine does, one stderr line and exit code
+    # 1 from load_fixture_league's own EngineError, not argparse's
+    # SystemExit(2) plus a usage dump.
+    exit_code = brief.main(
+        ["--fixtures", str(DEFAULT_FIXTURE_DIR), "--waiver-type", "nonsense"]
+    )
+
+    assert exit_code == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    stderr_lines = captured.err.strip("\n").split("\n")
+    assert len(stderr_lines) == 1
+    assert "Traceback" not in captured.err
+
+
 def test_main_week_4_succeeds(capsys):
     exit_code = brief.main(["--fixtures", str(DEFAULT_FIXTURE_DIR), "--week", "4"])
 

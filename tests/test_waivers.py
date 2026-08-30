@@ -207,11 +207,54 @@ def test_faab_and_priority_branches_carry_different_keys():
 
     for target in faab_result["targets"]:
         assert "bid" in target
+        # FAAB never declines a real upgrade, so there is no close
+        # claim/skip line to flag; the toss up keys are priority only.
+        assert "toss_up" not in target
+        assert "toss_up_margin" not in target
+        assert "toss_up_options" not in target
 
     for target in priority_result["targets"]:
         assert "bid" not in target
         assert "required_gain" in target
         assert "priority_position" in target
+
+
+# ---------------------------------------------------------------------------
+# Priority: the toss up band around required_priority_gain
+# ---------------------------------------------------------------------------
+
+
+def test_priority_flags_toss_up_within_margin_of_the_bar_and_not_outside_it():
+    league_priority = fixtures.load_fixture_league(waiver_type="priority")
+    result = waivers.rank_waiver_targets(league_priority, "t1", 3)
+    bar = result["required_gain"]
+    margin = waivers.DEFAULT_TOSS_UP_MARGIN_POINTS
+
+    flagged = []
+    unflagged = []
+    for target in result["targets"]:
+        inside_band = abs(target["points_gained"] - bar) < margin
+        if inside_band:
+            assert target["toss_up"] is True
+            assert target["toss_up_margin"] == margin
+            assert target["toss_up_options"] == ["claim", "skip"]
+            flagged.append(target)
+        else:
+            assert "toss_up" not in target
+            assert "toss_up_margin" not in target
+            assert "toss_up_options" not in target
+            unflagged.append(target)
+
+    # The fixture guarantees both a flagged and an unflagged target exist
+    # at t1's priority position, so this cannot pass vacuously.
+    assert flagged, result["targets"]
+    assert unflagged, result["targets"]
+
+    # A flagged target still keeps whichever hard verdict the threshold
+    # computed; the flag adds information, it never replaces the verdict.
+    for target in flagged:
+        expected_verdict = "claim" if target["points_gained"] >= bar else "skip"
+        assert target["verdict"] == expected_verdict
 
 
 # ---------------------------------------------------------------------------

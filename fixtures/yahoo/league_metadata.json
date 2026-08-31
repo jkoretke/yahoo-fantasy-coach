@@ -1,0 +1,14 @@
+{
+  "current_week": 3,
+  "end_week": 17,
+  "game_code": "nfl",
+  "league_id": "524458",
+  "league_key": "461.l.524458",
+  "league_type": "private",
+  "name": "Sample Yahoo League",
+  "num_teams": "10",
+  "scoring_type": "head",
+  "season": "2025",
+  "start_week": "1",
+  "url": "https://football.fantasysports.yahoo.com/f1/524458"
+}

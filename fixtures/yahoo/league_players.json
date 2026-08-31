@@ -1,0 +1,120 @@
+[
+  {
+    "player_key": "461.p.4984",
+    "player_id": "4984",
+    "name": {
+      "first": "Josh",
+      "last": "Allen",
+      "full": "Josh Allen",
+      "ascii_first": "Josh",
+      "ascii_last": "Allen"
+    },
+    "editorial_team_abbr": "Buf",
+    "editorial_team_full_name": "Buffalo Bills",
+    "display_position": "QB",
+    "primary_position": "QB",
+    "position_type": "O",
+    "eligible_positions": ["QB"],
+    "bye_weeks": {"week": "7"},
+    "uniform_number": "17"
+  },
+  {
+    "player_key": "461.p.4986",
+    "player_id": "4986",
+    "name": {
+      "first": "James",
+      "last": "Conner",
+      "full": "James Conner",
+      "ascii_first": "James",
+      "ascii_last": "Conner"
+    },
+    "editorial_team_abbr": "Ari",
+    "editorial_team_full_name": "Arizona Cardinals",
+    "display_position": "RB",
+    "primary_position": "RB",
+    "position_type": "O",
+    "eligible_positions": ["RB", "W/R/T"],
+    "bye_weeks": {"week": "8"},
+    "uniform_number": "6",
+    "status": "IR",
+    "status_full": "Injured Reserve"
+  },
+  {
+    "player_key": "461.p.11604",
+    "player_id": "11604",
+    "name": {
+      "first": "Marvin",
+      "last": "Harrison Jr.",
+      "full": "Marvin Harrison Jr.",
+      "ascii_first": "Marvin",
+      "ascii_last": "Harrison Jr."
+    },
+    "editorial_team_abbr": "Ind",
+    "editorial_team_full_name": "Indianapolis Colts",
+    "display_position": "WR",
+    "primary_position": "WR",
+    "position_type": "O",
+    "eligible_positions": ["WR", "W/R/T"],
+    "bye_weeks": {"week": "14"},
+    "uniform_number": "11"
+  },
+  {
+    "player_key": "461.p.7547",
+    "player_id": "7547",
+    "name": {
+      "first": "Amon-Ra",
+      "last": "St. Brown",
+      "full": "Amon-Ra St. Brown",
+      "ascii_first": "Amon-Ra",
+      "ascii_last": "St. Brown"
+    },
+    "editorial_team_abbr": "Det",
+    "editorial_team_full_name": "Detroit Lions",
+    "display_position": "WR",
+    "primary_position": "WR",
+    "position_type": "O",
+    "eligible_positions": {"position": "WR"},
+    "bye_weeks": {"week": "5"},
+    "uniform_number": "14",
+    "status": "Q",
+    "status_full": "Questionable"
+  },
+  {
+    "player_key": "461.p.9509",
+    "player_id": "9509",
+    "name": {
+      "first": "Trey",
+      "last": "McBride",
+      "full": "Trey McBride",
+      "ascii_first": "Trey",
+      "ascii_last": "McBride"
+    },
+    "editorial_team_abbr": "Ari",
+    "editorial_team_full_name": "Arizona Cardinals",
+    "display_position": "TE",
+    "primary_position": "TE",
+    "position_type": "O",
+    "eligible_positions": "TE",
+    "bye_weeks": {"week": "8"},
+    "uniform_number": "85"
+  },
+  {
+    "player_key": "461.p.100024",
+    "player_id": "100024",
+    "name": {
+      "first": "Kansas City",
+      "last": "",
+      "full": "Kansas City",
+      "ascii_first": "Kansas City",
+      "ascii_last": ""
+    },
+    "editorial_team_abbr": "KC",
+    "editorial_team_full_name": "Kansas City Chiefs",
+    "display_position": "DEF",
+    "primary_position": "DEF",
+    "position_type": "DT",
+    "eligible_positions": ["DEF"],
+    "bye_weeks": {"week": "10"},
+    "uniform_number": ""
+  }
+]

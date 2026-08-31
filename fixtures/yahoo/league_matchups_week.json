@@ -1,0 +1,30 @@
+[
+  {
+    "week": "3",
+    "week_start": "2025-09-18",
+    "week_end": "2025-09-22",
+    "status": "midevent",
+    "is_playoffs": "0",
+    "is_consolation": "0",
+    "is_tied": 0,
+    "winner_team_key": "",
+    "teams": [
+      {"team": {"team_key": "461.l.524458.t.1", "team_id": "1", "name": "Sample Squad One", "is_owned_by_current_login": 1}},
+      {"team": {"team_key": "461.l.524458.t.2", "team_id": "2", "name": "Sample Squad Two"}}
+    ]
+  },
+  {
+    "week": "3",
+    "week_start": "2025-09-18",
+    "week_end": "2025-09-22",
+    "status": "midevent",
+    "is_playoffs": "0",
+    "is_consolation": "0",
+    "is_tied": 0,
+    "winner_team_key": "",
+    "teams": [
+      {"team": {"team_key": "461.l.524458.t.3", "team_id": "3", "name": "Sample Squad Three"}},
+      {"team": {"team_key": "461.l.524458.t.4", "team_id": "4", "name": "Sample Squad Four"}}
+    ]
+  }
+]

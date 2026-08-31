@@ -1,0 +1,98 @@
+{
+  "coverage_type": "week",
+  "week": "3",
+  "is_editable": 0,
+  "is_prescoring": 0,
+  "players": [
+    {
+      "player": {
+        "player_key": "461.p.4984",
+        "player_id": "4984",
+        "name": {
+          "first": "Josh",
+          "last": "Allen",
+          "full": "Josh Allen",
+          "ascii_first": "Josh",
+          "ascii_last": "Allen"
+        },
+        "editorial_team_abbr": "Buf",
+        "editorial_team_full_name": "Buffalo Bills",
+        "display_position": "QB",
+        "primary_position": "QB",
+        "position_type": "O",
+        "eligible_positions": ["QB"],
+        "bye_weeks": {"week": "7"},
+        "uniform_number": "17",
+        "selected_position": {"coverage_type": "week", "is_flex": 0, "position": "QB", "week": "3"}
+      }
+    },
+    {
+      "player": {
+        "player_key": "461.p.4986",
+        "player_id": "4986",
+        "name": {
+          "first": "James",
+          "last": "Conner",
+          "full": "James Conner",
+          "ascii_first": "James",
+          "ascii_last": "Conner"
+        },
+        "editorial_team_abbr": "Ari",
+        "editorial_team_full_name": "Arizona Cardinals",
+        "display_position": "RB",
+        "primary_position": "RB",
+        "position_type": "O",
+        "eligible_positions": ["RB", "W/R/T"],
+        "bye_weeks": {"week": "8"},
+        "uniform_number": "6",
+        "status": "IR",
+        "status_full": "Injured Reserve",
+        "selected_position": {"coverage_type": "week", "is_flex": 0, "position": "BN", "week": "3"}
+      }
+    },
+    {
+      "player": {
+        "player_key": "461.p.11604",
+        "player_id": "11604",
+        "name": {
+          "first": "Marvin",
+          "last": "Harrison Jr.",
+          "full": "Marvin Harrison Jr.",
+          "ascii_first": "Marvin",
+          "ascii_last": "Harrison Jr."
+        },
+        "editorial_team_abbr": "Ind",
+        "editorial_team_full_name": "Indianapolis Colts",
+        "display_position": "WR",
+        "primary_position": "WR",
+        "position_type": "O",
+        "eligible_positions": ["WR", "W/R/T"],
+        "bye_weeks": {"week": "14"},
+        "uniform_number": "11",
+        "selected_position": {"coverage_type": "week", "is_flex": 1, "position": "W/R/T", "week": "3"}
+      }
+    },
+    {
+      "player": {
+        "player_key": "461.p.100024",
+        "player_id": "100024",
+        "name": {
+          "first": "Kansas City",
+          "last": "",
+          "full": "Kansas City",
+          "ascii_first": "Kansas City",
+          "ascii_last": ""
+        },
+        "editorial_team_abbr": "KC",
+        "editorial_team_full_name": "Kansas City Chiefs",
+        "display_position": "DEF",
+        "primary_position": "DEF",
+        "position_type": "DT",
+        "eligible_positions": ["DEF"],
+        "bye_weeks": {"week": "10"},
+        "uniform_number": "",
+        "selected_position": {"coverage_type": "week", "is_flex": 0, "position": "DEF", "week": "3"}
+      }
+    }
+  ]
+}

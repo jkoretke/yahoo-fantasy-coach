@@ -7,3 +7,7 @@ pytest==8.4.2
 PyYAML==6.0.3
 tomli==2.4.1
 typing_extensions==4.16.0
+# Yahoo Fantasy Sports API client, used only by engine/yahoo_client.py.
+# yfpy 17.0.0 requires Python 3.10 or newer; the marker keeps a plain
+# `pip install -r requirements.txt` working on a Python 3.9 environment.
+yfpy==17.0.0; python_version >= "3.10"

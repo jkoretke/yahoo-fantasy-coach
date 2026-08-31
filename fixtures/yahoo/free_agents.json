@@ -1,0 +1,44 @@
+[
+  {
+    "player_key": "461.p.9509",
+    "player_id": "9509",
+    "name": {
+      "first": "Trey",
+      "last": "McBride",
+      "full": "Trey McBride",
+      "ascii_first": "Trey",
+      "ascii_last": "McBride"
+    },
+    "editorial_team_abbr": "Ari",
+    "editorial_team_full_name": "Arizona Cardinals",
+    "display_position": "TE",
+    "primary_position": "TE",
+    "position_type": "O",
+    "eligible_positions": ["TE"],
+    "bye_weeks": {"week": "8"},
+    "uniform_number": "85",
+    "ownership": {"ownership_type": "freeagents"},
+    "percent_owned": {"coverage_type": "week", "week": "3", "value": 41, "delta": "+6"}
+  },
+  {
+    "player_key": "461.p.12345",
+    "player_id": "12345",
+    "name": {
+      "first": "Sample",
+      "last": "Waiver Add",
+      "full": "Sample Waiver Add",
+      "ascii_first": "Sample",
+      "ascii_last": "Waiver Add"
+    },
+    "editorial_team_abbr": "NE",
+    "editorial_team_full_name": "New England Patriots",
+    "display_position": "RB",
+    "primary_position": "RB",
+    "position_type": "O",
+    "eligible_positions": ["RB", "W/R/T"],
+    "bye_weeks": {"week": "14"},
+    "uniform_number": "29",
+    "ownership": {"ownership_type": "freeagents"},
+    "percent_owned": {"coverage_type": "week", "week": "3", "value": 4, "delta": "+2"}
+  }
+]

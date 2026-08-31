@@ -1,0 +1,66 @@
+{
+  "scoring_type": "head",
+  "max_teams": "10",
+  "num_playoff_teams": "4",
+  "playoff_start_week": "15",
+  "player_pool": "ALL",
+  "post_draft_players": "W",
+  "draft_type": "live",
+  "uses_faab": "0",
+  "uses_fractional_points": "1",
+  "uses_negative_points": "1",
+  "waiver_rule": "gametime",
+  "waiver_time": "2",
+  "waiver_type": "R",
+  "roster_positions": [
+    {"roster_position": {"count": 1, "position": "QB", "position_type": "O", "is_starting_position": 1, "is_bench": 0}},
+    {"roster_position": {"count": 2, "position": "RB", "position_type": "O", "is_starting_position": 1, "is_bench": 0}},
+    {"roster_position": {"count": 2, "position": "WR", "position_type": "O", "is_starting_position": 1, "is_bench": 0}},
+    {"roster_position": {"count": 1, "position": "TE", "position_type": "O", "is_starting_position": 1, "is_bench": 0}},
+    {"roster_position": {"count": 1, "position": "W/R/T", "position_type": "O", "is_starting_position": 1, "is_bench": 0}},
+    {"roster_position": {"count": 1, "position": "K", "position_type": "K", "is_starting_position": 1, "is_bench": 0}},
+    {"roster_position": {"count": 1, "position": "DEF", "position_type": "DT", "is_starting_position": 1, "is_bench": 0}},
+    {"roster_position": {"count": 6, "position": "BN", "position_type": "", "is_starting_position": 0, "is_bench": 1}},
+    {"roster_position": {"count": 1, "position": "IR", "position_type": "", "is_starting_position": 0, "is_bench": 0}}
+  ],
+  "stat_categories": {
+    "stats": [
+      {"stat": {"stat_id": 4, "name": "Passing Yards", "display_name": "Pass Yds", "enabled": "1", "position_type": "O"}},
+      {"stat": {"stat_id": 5, "name": "Passing Touchdowns", "display_name": "Pass TD", "enabled": "1", "position_type": "O"}},
+      {"stat": {"stat_id": 6, "name": "Interceptions", "display_name": "Int", "enabled": "1", "position_type": "O"}},
+      {"stat": {"stat_id": 9, "name": "Rushing Yards", "display_name": "Rush Yds", "enabled": "1", "position_type": "O"}},
+      {"stat": {"stat_id": 10, "name": "Rushing Touchdowns", "display_name": "Rush TD", "enabled": "1", "position_type": "O"}},
+      {"stat": {"stat_id": 11, "name": "Receptions", "display_name": "Rec", "enabled": "1", "position_type": "O"}},
+      {"stat": {"stat_id": 12, "name": "Reception Yards", "display_name": "Rec Yds", "enabled": "1", "position_type": "O"}},
+      {"stat": {"stat_id": 13, "name": "Reception Touchdowns", "display_name": "Rec TD", "enabled": "1", "position_type": "O"}},
+      {"stat": {"stat_id": 18, "name": "Fumbles Lost", "display_name": "Fum Lost", "enabled": "1", "position_type": "O"}},
+      {"stat": {"stat_id": 19, "name": "Field Goals Made", "display_name": "FG", "enabled": "1", "position_type": "K"}},
+      {"stat": {"stat_id": 29, "name": "Extra Points Made", "display_name": "PAT Made", "enabled": "1", "position_type": "K"}},
+      {"stat": {"stat_id": 32, "name": "Sack", "display_name": "Sack", "enabled": "1", "position_type": "DT"}},
+      {"stat": {"stat_id": 33, "name": "Interception", "display_name": "Int", "enabled": "1", "position_type": "DT"}},
+      {"stat": {"stat_id": 34, "name": "Fumble Recovery", "display_name": "Fum Rec", "enabled": "1", "position_type": "DT"}},
+      {"stat": {"stat_id": 35, "name": "Touchdown", "display_name": "TD", "enabled": "1", "position_type": "DT"}},
+      {"stat": {"stat_id": 78, "name": "Targets", "display_name": "Tgt", "enabled": "1", "position_type": "O"}}
+    ]
+  },
+  "stat_modifiers": {
+    "stats": [
+      {"stat": {"stat_id": 4, "value": "0.04"}},
+      {"stat": {"stat_id": 5, "value": "4"}},
+      {"stat": {"stat_id": 6, "value": "-2"}},
+      {"stat": {"stat_id": 9, "value": "0.1"}},
+      {"stat": {"stat_id": 10, "value": "6"}},
+      {"stat": {"stat_id": 11, "value": "0.5"}},
+      {"stat": {"stat_id": 12, "value": "0.1"}},
+      {"stat": {"stat_id": 13, "value": "6"}},
+      {"stat": {"stat_id": 18, "value": "-2"}},
+      {"stat": {"stat_id": 19, "value": "3"}},
+      {"stat": {"stat_id": 29, "value": "1"}},
+      {"stat": {"stat_id": 32, "value": "1"}},
+      {"stat": {"stat_id": 33, "value": "2"}},
+      {"stat": {"stat_id": 34, "value": "2"}},
+      {"stat": {"stat_id": 35, "value": "6"}},
+      {"stat": {"stat_id": 78, "value": "0"}}
+    ]
+  }
+}

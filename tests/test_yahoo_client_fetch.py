@@ -23,6 +23,7 @@ parser actually returns.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -623,12 +624,19 @@ def test_jsonify_passes_through_an_empty_list_unchanged() -> None:
     assert yc._jsonify(value) is value
 
 
-def test_jsonify_raises_engine_error_naming_python_310_for_a_real_model_value() -> None:
+def test_jsonify_raises_engine_error_naming_python_310_for_a_real_model_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     # A bare object is neither a dict nor a list of dicts, so this falls
-    # through to _jsonify's own lazy yfpy import (never written here),
-    # which fails on this repo's Python 3.9 virtualenv exactly the way
-    # _query_class's own ImportError branch does (see
-    # tests/test_yahoo_client_auth.py's matching test for that function).
+    # through to _jsonify's own lazy yfpy import. Force the ImportError
+    # deterministically rather than relying on yfpy genuinely being absent
+    # from the current venv, the same reason test_query_class_raises_engine_
+    # error_naming_python_310 in tests/test_yahoo_client_auth.py does this:
+    # setting sys.modules["yfpy"] to None makes the lazy `from yfpy.utils
+    # import jsonify_data` raise ImportError regardless of whether yfpy is
+    # actually installed, so the test stays correct on any venv, including
+    # this repo's current Python 3.13 one with yfpy really installed.
+    monkeypatch.setitem(sys.modules, "yfpy", None)
     with pytest.raises(EngineError, match="3.10"):
         yc._jsonify(object())
 

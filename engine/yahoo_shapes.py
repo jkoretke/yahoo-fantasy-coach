@@ -35,6 +35,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from engine.sources.base import normalize_name, normalize_team_abbreviation
+
 # The exact 15 scoring keys engine/scoring.py reads from
 # fixtures/sample_league/league.json's settings.scoring.stats. This set is
 # hardcoded here (this module cannot read that fixture file, since it does
@@ -505,3 +507,371 @@ def parse_league_metadata(league_payload: Any) -> dict[str, Any]:
         "scoring_type": _str_field("scoring_type"),
         "url": _str_field("url"),
     }
+
+
+# The exact key set, in order, every parse_player record carries.
+YAHOO_PLAYER_KEYS: tuple[str, ...] = (
+    "player_id",
+    "player_key",
+    "name",
+    "normalized_name",
+    "positions",
+    "primary_position",
+    "nfl_team",
+    "status",
+    "status_full",
+    "bye_week",
+    "percent_owned",
+    "selected_slot",
+)
+
+
+def _coerce_float(value: Any) -> float | None:
+    """Coerce a Yahoo numeric field (often a string) to float, or None on failure."""
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        try:
+            return float(text)
+        except ValueError:
+            return None
+    return None
+
+
+def _player_positions_from_eligible(raw: Any) -> list[str]:
+    """Turn a Player's eligible_positions field into a plain list of strings.
+
+    Handles the three forms fixtures/yahoo/league_players.json exercises:
+    a genuine serialized list of strings (["WR"]), the raw wrapped-dict
+    form Yahoo sends before the pinned client library's Player model
+    normalizes it away ({"position": "WR"}), and the raw bare-string form
+    ("TE"). A list may also mix in {"position": ...} dict elements; each
+    is unwrapped the same way. Anything else contributes nothing. Never
+    raises.
+    """
+    if isinstance(raw, list):
+        positions: list[str] = []
+        for item in raw:
+            if isinstance(item, str) and item:
+                positions.append(item)
+            elif isinstance(item, dict):
+                position = item.get("position")
+                if isinstance(position, str) and position:
+                    positions.append(position)
+        return positions
+    if isinstance(raw, dict):
+        position = raw.get("position")
+        if isinstance(position, str) and position:
+            return [position]
+        return []
+    if isinstance(raw, str) and raw:
+        return [raw]
+    return []
+
+
+def _extract_player_id(payload: dict[str, Any]) -> str:
+    """Derive a player's id.
+
+    player_id, stringified, when present and non-blank; otherwise the
+    trailing segment of player_key after its last "."; "" when neither
+    works.
+    """
+    raw_id = payload.get("player_id")
+    if raw_id is not None:
+        text = str(raw_id).strip()
+        if text:
+            return text
+    player_key = payload.get("player_key")
+    if isinstance(player_key, str) and player_key:
+        return player_key.rsplit(".", 1)[-1]
+    return ""
+
+
+def _extract_player_name(payload: dict[str, Any]) -> str:
+    """Derive a player's display name.
+
+    name.full stripped, when present and non-blank; otherwise
+    "<name.first> <name.last>" joined with a single space and stripped;
+    "" when neither works.
+    """
+    name_obj = payload.get("name")
+    if not isinstance(name_obj, dict):
+        return ""
+    full = name_obj.get("full")
+    if isinstance(full, str):
+        stripped_full = full.strip()
+        if stripped_full:
+            return stripped_full
+    first = name_obj.get("first")
+    last = name_obj.get("last")
+    first_text = first if isinstance(first, str) else ""
+    last_text = last if isinstance(last, str) else ""
+    return f"{first_text} {last_text}".strip()
+
+
+def parse_player(player_payload: Any) -> dict[str, Any] | None:
+    """Normalize one Yahoo Player payload into this repo's player record.
+
+    Returns a dict with exactly YAHOO_PLAYER_KEYS, or None when the
+    payload carries no usable player_id and no usable name, so a caller
+    can skip that one record instead of failing the whole parse.
+
+    Field rules: player_id and name are derived by _extract_player_id and
+    _extract_player_name above. normalized_name is
+    engine.sources.base.normalize_name(name), the same deterministic join
+    key engine.sources.sleeper and engine.sources.injuries already use, so
+    a Yahoo player can be matched against those feeds without a second
+    normalization scheme. positions is always a list of strings, taken
+    from eligible_positions in any of its three forms (a genuine list of
+    strings, the raw {"position": ...} wrapped-dict form, or a raw bare
+    string), falling back to [display_position] then [primary_position]
+    then []. primary_position is a plain string, from primary_position
+    falling back to display_position, else "". nfl_team is
+    engine.sources.base.normalize_team_abbreviation(editorial_team_abbr),
+    which is what turns Yahoo's "Ari" into "ARI" and lets the ESPN injury
+    lookup match. status and status_full are strings, "" when absent.
+    bye_week is an int from bye_weeks.week, or None when missing or
+    unparseable. percent_owned is a float from percent_owned.value, or
+    None when absent or unparseable. selected_slot is a string from
+    selected_position.position, or "" when absent.
+
+    Never raises on any input.
+    """
+    payload = player_payload if isinstance(player_payload, dict) else {}
+
+    player_id = _extract_player_id(payload)
+    name = _extract_player_name(payload)
+    if not player_id and not name:
+        return None
+
+    player_key_raw = payload.get("player_key")
+    player_key = player_key_raw if isinstance(player_key_raw, str) else ""
+
+    positions = _player_positions_from_eligible(payload.get("eligible_positions"))
+    display_position_raw = payload.get("display_position")
+    display_position = display_position_raw if isinstance(display_position_raw, str) else ""
+    primary_position_raw = payload.get("primary_position")
+    primary_position_field = primary_position_raw if isinstance(primary_position_raw, str) else ""
+    if not positions and display_position:
+        positions = [display_position]
+    if not positions and primary_position_field:
+        positions = [primary_position_field]
+
+    primary_position = primary_position_field or display_position
+
+    team_raw = payload.get("editorial_team_abbr")
+    nfl_team = normalize_team_abbreviation(team_raw if isinstance(team_raw, str) else None)
+
+    status_raw = payload.get("status")
+    status = status_raw if isinstance(status_raw, str) else ""
+    status_full_raw = payload.get("status_full")
+    status_full = status_full_raw if isinstance(status_full_raw, str) else ""
+
+    bye_weeks_obj = payload.get("bye_weeks")
+    bye_week = _coerce_int(bye_weeks_obj.get("week")) if isinstance(bye_weeks_obj, dict) else None
+
+    percent_owned_obj = payload.get("percent_owned")
+    percent_owned = (
+        _coerce_float(percent_owned_obj.get("value")) if isinstance(percent_owned_obj, dict) else None
+    )
+
+    selected_position_obj = payload.get("selected_position")
+    selected_slot = ""
+    if isinstance(selected_position_obj, dict):
+        slot_raw = selected_position_obj.get("position")
+        if isinstance(slot_raw, str):
+            selected_slot = slot_raw
+
+    return {
+        "player_id": player_id,
+        "player_key": player_key,
+        "name": name,
+        "normalized_name": normalize_name(name),
+        "positions": positions,
+        "primary_position": primary_position,
+        "nfl_team": nfl_team,
+        "status": status,
+        "status_full": status_full,
+        "bye_week": bye_week,
+        "percent_owned": percent_owned,
+        "selected_slot": selected_slot,
+    }
+
+
+def parse_player_list(players_payload: Any) -> dict[str, Any]:
+    """Parse a list of Yahoo Player payloads into this repo's player records.
+
+    Accepts a plain JSON list of player dicts, a list of {"player": {...}}
+    wrappers, or a dict with a "players" key holding either of those two
+    forms. A record parse_player rejects (no usable id or name) is
+    skipped rather than failing the whole parse.
+
+    Returns {"players": [<parse_player record>, ...], "count": <int>} in
+    the same order as the input. Garbage input returns {"players": [],
+    "count": 0}. Never raises.
+    """
+    payload: Any = players_payload
+    if isinstance(payload, dict) and "players" in payload:
+        payload = payload["players"]
+
+    players: list[dict[str, Any]] = []
+    for entry in unwrap_yahoo_list(payload, "player"):
+        record = parse_player(entry)
+        if record is not None:
+            players.append(record)
+
+    return {"players": players, "count": len(players)}
+
+
+def parse_roster(roster_payload: Any, *, team_id: str) -> dict[str, Any]:
+    """Parse a Yahoo Roster payload for one team in one week.
+
+    Returns {"team_id": str(team_id), "week": int | None, "coverage_type":
+    str, "roster": [{"player_id": str, "player_key": str, "selected_slot":
+    str}, ...], "players": [<parse_player record>, ...]}.
+
+    "roster" intentionally mirrors the {player_id, selected_slot} shape
+    fixtures/sample_league/teams.json already uses, so downstream Phase 1
+    code can consume it; "players" carries the full parsed records so a
+    caller does not have to fetch them twice. team_id always comes from
+    the given keyword argument, not from the payload, since a Roster
+    payload does not itself carry which team it belongs to.
+
+    Garbage input returns the same key set with empty lists. Never
+    raises.
+    """
+    payload = roster_payload if isinstance(roster_payload, dict) else {}
+
+    week = _coerce_int(payload.get("week"))
+    coverage_type_raw = payload.get("coverage_type")
+    coverage_type = coverage_type_raw if isinstance(coverage_type_raw, str) else ""
+
+    roster: list[dict[str, Any]] = []
+    players: list[dict[str, Any]] = []
+    for entry in unwrap_yahoo_list(payload.get("players"), "player"):
+        record = parse_player(entry)
+        if record is None:
+            continue
+        players.append(record)
+        roster.append(
+            {
+                "player_id": record["player_id"],
+                "player_key": record["player_key"],
+                "selected_slot": record["selected_slot"],
+            }
+        )
+
+    return {
+        "team_id": str(team_id),
+        "week": week,
+        "coverage_type": coverage_type,
+        "roster": roster,
+        "players": players,
+    }
+
+
+def _matchup_team_sort_key(team_id: str) -> tuple[int, Any]:
+    """Sort team ids numerically when possible, falling back to string sort.
+
+    Yahoo team ids are small numbers spelled as strings; sorting them as
+    plain strings would put "10" before "2" in a bigger league. Any team
+    id that will not parse as an int just sorts after every numeric one,
+    by its raw string.
+    """
+    try:
+        return (0, int(team_id))
+    except (TypeError, ValueError):
+        return (1, team_id)
+
+
+def parse_matchups(matchups_payload: Any, *, week: int) -> dict[str, Any]:
+    """Parse a week's worth of Yahoo Matchup payloads.
+
+    Returns {"week": int(week), "matchups": [{"matchup_id": str, "week":
+    int, "team_ids": [str, str], "team_keys": [str, str], "status": str,
+    "is_playoffs": bool, "winner_team_key": str}, ...], "owner_team_id":
+    str}.
+
+    matchup_id is deterministic and derived, not sent by Yahoo: the week
+    followed by the sorted team ids joined with "-", for example "3-1-2".
+    owner_team_id is the team_id of the team whose payload has a truthy
+    is_owned_by_current_login, across all matchups in the payload (the
+    first one found, in payload order), or "" when none does. A matchup
+    that does not yield exactly two teams is skipped.
+
+    Garbage input returns {"week": int(week), "matchups": [],
+    "owner_team_id": ""}. Never raises.
+    """
+    week_int = int(week)
+
+    matchups: list[dict[str, Any]] = []
+    owner_team_id = ""
+
+    for entry in unwrap_yahoo_list(matchups_payload, "matchup"):
+        team_ids: list[str] = []
+        team_keys: list[str] = []
+        for team in unwrap_yahoo_list(entry.get("teams"), "team"):
+            team_id_raw = team.get("team_id")
+            team_id_str = str(team_id_raw) if team_id_raw is not None else ""
+            team_key_raw = team.get("team_key")
+            team_key_str = team_key_raw if isinstance(team_key_raw, str) else ""
+            team_ids.append(team_id_str)
+            team_keys.append(team_key_str)
+            if not owner_team_id and _yahoo_truthy(team.get("is_owned_by_current_login")):
+                owner_team_id = team_id_str
+
+        if len(team_ids) != 2:
+            continue
+
+        status_raw = entry.get("status")
+        status = status_raw if isinstance(status_raw, str) else ""
+        winner_raw = entry.get("winner_team_key")
+        winner_team_key = winner_raw if isinstance(winner_raw, str) else ""
+
+        sorted_ids = sorted(team_ids, key=_matchup_team_sort_key)
+        matchup_id = f"{week_int}-" + "-".join(sorted_ids)
+
+        matchups.append(
+            {
+                "matchup_id": matchup_id,
+                "week": week_int,
+                "team_ids": team_ids,
+                "team_keys": team_keys,
+                "status": status,
+                "is_playoffs": _yahoo_truthy(entry.get("is_playoffs")),
+                "winner_team_key": winner_team_key,
+            }
+        )
+
+    return {"week": week_int, "matchups": matchups, "owner_team_id": owner_team_id}
+
+
+def parse_free_agents(players_payload: Any) -> dict[str, Any]:
+    """Parse a Yahoo free-agent Player list.
+
+    Returns {"free_agents": [{"player_id": str, "percent_owned": float},
+    ...], "players": [<parse_player record>, ...], "count": int}.
+    "free_agents" mirrors the shape fixtures/sample_league/free_agents.json
+    uses. percent_owned defaults to 0.0 when Yahoo did not send one.
+
+    Accepts a plain JSON list of player dicts or a list of {"player":
+    {...}} wrappers, same as parse_player_list. Garbage input returns
+    {"free_agents": [], "players": [], "count": 0}. Never raises.
+    """
+    free_agents: list[dict[str, Any]] = []
+    players: list[dict[str, Any]] = []
+
+    for entry in unwrap_yahoo_list(players_payload, "player"):
+        record = parse_player(entry)
+        if record is None:
+            continue
+        players.append(record)
+        percent_owned = record["percent_owned"] if record["percent_owned"] is not None else 0.0
+        free_agents.append({"player_id": record["player_id"], "percent_owned": percent_owned})
+
+    return {"free_agents": free_agents, "players": players, "count": len(players)}

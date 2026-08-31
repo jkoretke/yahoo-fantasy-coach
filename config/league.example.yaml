@@ -1,0 +1,85 @@
+# Yahoo Fantasy Coach league configuration template.
+#
+# Copy this file to config/league.yaml and fill in your own values. Keep
+# secrets (API keys, tokens, passwords) out of this file entirely: they
+# belong in ~/.config/yahoo-fantasy-coach/secrets.env instead, loaded by
+# engine.common.load_secrets. This file is safe to commit to a public
+# repository.
+#
+# Every key below is read by engine.config.load_league_config, which
+# merges whatever you set here over the built-in defaults, so you only
+# need to include the keys you want to change from their default.
+
+# Which Yahoo Fantasy Football league to run the coach against.
+league:
+  # Yahoo's league key, of the form "<game_id>.l.<league_id>", for example
+  # "449.l.123456". Shown here as a placeholder value; replace it with your
+  # own league key. Built-in default when this key is left out: "".
+  league_id: "nfl.l.123456"
+  # The NFL season year this config points at. Default: 2026.
+  season: 2026
+  # Yahoo's numeric game id for the season above (for example 449 for the
+  # 2026 NFL season). Leave null to let the engine resolve it from the
+  # league_id or the season. Default: null.
+  game_id: null
+  # Your own team id within the league, used to know whose lineup and
+  # waivers this coach is managing. Default: "" (not yet known).
+  team_id: ""
+
+# IANA timezone name used for every date and time this coach prints or
+# schedules against, for example waiver.time below. Default:
+# "America/Los_Angeles".
+timezone: "America/Los_Angeles"
+
+# When Yahoo's waiver processing runs for this league, used to time the
+# waiver_run wrapper.
+waiver:
+  # Day of the week waivers process, lowercase. Default: "tuesday".
+  day: "tuesday"
+  # Time of day waivers process, 24 hour "HH:MM" in the timezone above.
+  # Default: "23:00".
+  time: "23:00"
+
+# Where and how run summaries are emailed.
+email:
+  # Which backend sends the email: "brevo" (Brevo transactional API) or
+  # "smtp" (curl over SMTP, for example Gmail). Default: "smtp".
+  backend: "smtp"
+  # Address the run summary is sent to. Shown here as a placeholder value;
+  # replace it with your own address. Built-in default when this key is
+  # left out: "".
+  to: "you@example.com"
+  # Address the run summary is sent from. Default: "you@example.com".
+  from_email: "you@example.com"
+  # Display name attached to the from address. Default: "Fantasy Coach".
+  from_name: "Fantasy Coach"
+  # Path to the curl config file holding SMTP credentials, only used when
+  # backend is "smtp" (see engine.notify for the exact curl invocation).
+  # Default: "~/.config/yahoo-fantasy-coach/curlrc".
+  curlrc: "~/.config/yahoo-fantasy-coach/curlrc"
+
+# Which optional data sources to call. Each toggle matches one module
+# under engine/sources/. Turning one off makes the coach fall back to
+# Yahoo-only data for that signal instead of failing the run.
+sources:
+  # Sleeper projections (engine.sources.sleeper). Default: true.
+  sleeper: true
+  # NFL schedule and game times (engine.sources.schedule). Default: true.
+  schedule: true
+  # Injury reports (engine.sources.injuries). Default: true.
+  injuries: true
+  # Game-day weather (engine.sources.weather). Default: true.
+  weather: true
+
+# Point margin below which two lineup or waiver options are treated as a
+# toss-up rather than a confident recommendation. Shared by start/sit,
+# matchup, and waiver decisions. Default: 2.0.
+toss_up_margin_points: 2.0
+
+# How this coach calls out to Claude to write prose summaries.
+claude:
+  # The `claude` CLI binary to invoke. Default: "claude".
+  binary: "claude"
+  # Maximum seconds to wait for a claude subprocess before giving up.
+  # Default: 600.
+  timeout_seconds: 600

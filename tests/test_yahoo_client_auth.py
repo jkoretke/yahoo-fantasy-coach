@@ -222,6 +222,30 @@ def test_build_query_propagates_engine_error_for_missing_credential_unchanged(
     assert type(excinfo.value) is not YahooUnavailable
 
 
+def test_build_query_propagates_engine_error_from_query_class_resolution_unchanged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # _query_class() itself is what raises here (the yfpy-not-importable
+    # case), not the query constructor it returns. build_query must not
+    # wrap this in YahooUnavailable: _query_class() has to be resolved
+    # outside the try block, the same way yahoo_credentials already is,
+    # or a broken environment (missing/too-old yfpy) gets misreported as
+    # "Yahoo is down" instead of surfacing as a real configuration error.
+    secrets_path = tmp_path / "secrets.env"
+    _write_secrets(secrets_path)
+
+    def _raise_engine_error() -> Any:
+        raise EngineError("yfpy requires Python 3.10 or newer")
+
+    monkeypatch.setattr("engine.yahoo_client._query_class", _raise_engine_error)
+
+    with pytest.raises(EngineError) as excinfo:
+        build_query(league_id="1", secrets_path=secrets_path, token_dir=tmp_path / "td")
+
+    assert type(excinfo.value) is EngineError
+    assert type(excinfo.value) is not YahooUnavailable
+
+
 # --- harden_token_file ------------------------------------------------
 
 

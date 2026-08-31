@@ -189,19 +189,22 @@ def build_query(
     fetch functions built on top of this query object, which call yfpy's
     own get_league_key(season) to resolve the season specific league key.
 
-    Loading the client id and secret, and creating the token directory, both
-    happen outside and before the try block below. A missing credential is
-    a configuration error, not a Yahoo outage, and its EngineError must
-    propagate unchanged: keeping that call outside the try is what
-    guarantees this, since YahooUnavailable is itself an EngineError (and
-    an Exception), so any broad except wrapped around it would risk
+    Loading the client id and secret, resolving the query class via
+    _query_class(), and creating the token directory, all happen outside
+    and before the try block below. A missing credential, and a missing or
+    too old yfpy that _query_class() cannot import, are both configuration
+    errors rather than a Yahoo outage, and the EngineError either one
+    raises must propagate unchanged: keeping both calls outside the try is
+    what guarantees this, since YahooUnavailable is itself an EngineError
+    (and an Exception), so any broad except wrapped around them would risk
     swallowing the wrong thing.
     """
     client_id, client_secret = yahoo_credentials(secrets_path)
+    query_class = _query_class()
     token_dir_path(token_dir).mkdir(parents=True, exist_ok=True)
 
     try:
-        query = _query_class()(
+        query = query_class(
             league_id=str(league_id),
             game_code=GAME_CODE,
             game_id=game_id,
@@ -635,11 +638,14 @@ def fetch_free_agents(
     same way internally. Paging stops as soon as any one of three things
     happens: the running total reaches limit, a page comes back with
     fewer than _FREE_AGENTS_PAGE_SIZE entries (Yahoo's own signal that it
-    was the last page), or the per-page call raises. A raise on the very
-    first page (nothing collected yet) is a real failure and propagates
-    out of this loop into this module's normal exception contract; a
-    raise on any later page (after at least one page already succeeded)
-    is instead treated as end-of-pages, since that is also how yfpy's own
+    was the last page), or the per-page call raises. An EngineError on any
+    page (a configuration problem) is never read as end-of-pages: it
+    propagates unchanged, exactly like everywhere else in this module. A
+    non EngineError raise on the very first page (nothing collected yet)
+    is a real failure and also propagates out of this loop into this
+    module's normal exception contract; that same kind of raise on any
+    later page (after at least one page already succeeded) is instead
+    treated as end-of-pages, since that is also how yfpy's own
     get_league_players recognizes the end of the player pool: it catches
     yfpy.exceptions.YahooFantasySportsDataNotFound, a type this module
     cannot import without yfpy itself, so a bare `except Exception`
@@ -647,9 +653,18 @@ def fetch_free_agents(
     _FREE_AGENTS_MAX_PAGES iterations so a page that never comes back
     short, and never raises, cannot spin forever.
 
-    The collected list is trimmed to limit, converted to plain JSON with
-    _jsonify, and returned as
-    engine.yahoo_shapes.parse_free_agents(payload).
+    Because a later-page raise is indistinguishable from Yahoo legitimately
+    running out of players, the returned data always says which one
+    happened: it is
+    {**engine.yahoo_shapes.parse_free_agents(payload), "truncated": bool,
+    "pages_fetched": int}, where the collected list (trimmed to limit) is
+    what payload is converted from with _jsonify. truncated is True only
+    when a later page raised and the loop broke out early on that account;
+    it is False when paging stopped because a short page, the limit, or
+    the hard page cap was reached normally. pages_fetched is the number of
+    query() calls that returned successfully. A caller ranking waiver
+    claims against this data should treat truncated=True as a smaller,
+    possibly incomplete free agent pool rather than the full one.
 
     Returns disabled_result(SOURCE_NAME) immediately, with zero network
     or disk access and no credential read, when enabled is False.
@@ -681,6 +696,7 @@ def fetch_free_agents(
 
         collected: list[Any] = []
         page_count = 0
+        truncated = False
         while len(collected) < limit and page_count < _FREE_AGENTS_MAX_PAGES:
             start = page_count * _FREE_AGENTS_PAGE_SIZE
             url = (
@@ -690,8 +706,14 @@ def fetch_free_agents(
             )
             try:
                 page = resolved.query(url, ["league", "players"])
+            except EngineError:
+                # A configuration problem, not an end-of-pages signal. Must
+                # propagate unchanged rather than being read as "no more
+                # pages", same as everywhere else in this module.
+                raise
             except Exception:
                 if collected:
+                    truncated = True
                     break
                 raise
             page_count += 1
@@ -701,7 +723,11 @@ def fetch_free_agents(
                 break
 
         payload = _jsonify(collected[:limit])
-        return parse_free_agents(payload)
+        return {
+            **parse_free_agents(payload),
+            "truncated": truncated,
+            "pages_fetched": page_count,
+        }
 
     ok, result = _run_yahoo_call(_call)
     if not ok:

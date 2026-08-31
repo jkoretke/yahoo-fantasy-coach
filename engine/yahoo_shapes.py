@@ -3,16 +3,15 @@ shapes engine/fixtures.py, engine/scoring.py, engine/lineup.py and
 engine/waivers.py already consume.
 
 This module does no network access and no disk access, and it must never
-import this repo's pinned Yahoo fantasy client library (see
-requirements.txt; version 17.0.0 as of this phase). Its input is plain
-JSON: a Yahoo Settings or League object as that client library hands it
+import yfpy (see requirements.txt; yfpy==17.0.0 as of this phase). Its
+input is plain JSON: a Yahoo Settings or League object as yfpy hands it
 back, converted to plain JSON (see fixtures/yahoo/README.md for exactly
 how). engine/yahoo_client.py (a different module, built in a different
-chunk) is the only place in this repo that is allowed to import that
-client library or talk to Yahoo; every parsing rule that turns a Yahoo
-shape into this repo's shape lives here instead, so that rule can be
-tested from a frozen JSON fixture alone, with no live Yahoo access and no
-Yahoo client library install required. This split mirrors two
+chunk) is the only place in this repo that is allowed to import yfpy or
+talk to Yahoo; every parsing rule that turns a Yahoo shape into this
+repo's shape lives here instead, so that rule can be tested from a
+frozen JSON fixture alone, with no live Yahoo access and no yfpy install
+required. This split mirrors two
 precedents already in the repo: engine/fixtures.py is a helper module that
 exists purely to own a frozen fixture schema, and engine/sources/base.py
 is a helper module that exists purely to own shared parsing and envelope
@@ -151,11 +150,11 @@ def _coerce_int(value: Any) -> int | None:
 def unwrap_yahoo_list(value: Any, key: str) -> list[dict[str, Any]]:
     """Normalize a Yahoo list-valued attribute into a plain list of dicts.
 
-    The Yahoo client library's serialization keeps a single-key wrapper
-    dict around every list element (for example a roster_positions entry
-    serializes as {"roster_position": {...}}), but a real Yahoo response,
-    or a future client library change, may hand back the unwrapped inner
-    dicts directly instead.
+    yfpy's serialization keeps a single-key wrapper dict around every list
+    element (for example a roster_positions entry serializes as
+    {"roster_position": {...}}), but a real Yahoo response, or a future
+    yfpy version, may hand back the unwrapped inner dicts directly
+    instead.
     This function accepts all four shapes a caller might see: a list of
     {key: {...}} wrapper dicts, a list of bare dicts, a single {key: {...}}
     dict, or a single bare dict.
@@ -210,8 +209,7 @@ def _unwrap_stat_list(raw: Any) -> list[dict[str, Any]]:
 
     Accepts the fixture's nested wrapper form {"stats": [{"stat": {...}}]}
     as well as an already-unwrapped list or single dict, since a real
-    Yahoo response, or a future client library change, may not nest the
-    same way.
+    Yahoo response, or a future yfpy version, may not nest the same way.
     """
     if isinstance(raw, dict) and "stats" in raw:
         raw = raw["stats"]
@@ -377,10 +375,10 @@ def parse_waiver_settings(settings_payload: Any) -> dict[str, Any]:
     DELIBERATE, NOT A BUG. They are included only so this dict's key set
     matches the frozen settings.waiver shape engine/fixtures.py documents
     and engine/waivers.py reads. They cannot be filled in from a Yahoo
-    league settings response: verified directly against the pinned Yahoo
-    client library's own model definitions (models.py, version 17.0.0),
-    its Settings model has a uses_faab attribute but no faab_budget
-    attribute at all, and both the per-team FAAB balance (Team.faab_balance)
+    league settings response: verified directly against yfpy's own model
+    definitions (models.py, yfpy==17.0.0), its Settings model has a
+    uses_faab attribute but no faab_budget attribute at all, and both
+    the per-team FAAB balance (Team.faab_balance)
     and the waiver priority order live on Yahoo TEAM data, which this
     phase does not fetch. As a direct consequence, calling
     engine.waivers.rank_waiver_targets against a league dict built purely
@@ -548,9 +546,9 @@ def _player_positions_from_eligible(raw: Any) -> list[str]:
 
     Handles the three forms fixtures/yahoo/league_players.json exercises:
     a genuine serialized list of strings (["WR"]), the raw wrapped-dict
-    form Yahoo sends before the pinned client library's Player model
-    normalizes it away ({"position": "WR"}), and the raw bare-string form
-    ("TE"). A list may also mix in {"position": ...} dict elements; each
+    form Yahoo sends before yfpy's Player model normalizes it away
+    ({"position": "WR"}), and the raw bare-string form ("TE"). A list may
+    also mix in {"position": ...} dict elements; each
     is unwrapped the same way. Anything else contributes nothing. Never
     raises.
     """

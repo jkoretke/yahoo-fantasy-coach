@@ -252,7 +252,11 @@ def test_fetch_free_agents_success(monkeypatch: pytest.MonkeyPatch) -> None:
     assert result["available"] is True
     assert result["stale"] is False
     assert result["fetched_at"] is not None
-    assert result["data"] == yahoo_shapes.parse_free_agents(_free_agents_fixture())
+    assert result["data"] == {
+        **yahoo_shapes.parse_free_agents(_free_agents_fixture()),
+        "truncated": False,
+        "pages_fetched": 1,
+    }
     query_calls = [call for call in fq.calls if call[0] == "query"]
     assert len(query_calls) == 1
     assert ";status=FA;start=0;count=25" in query_calls[0][1][0]
@@ -411,6 +415,37 @@ def test_missing_credential_raises_but_yahoo_unavailable_returns_envelope(
     assert result["data"] is None
 
 
+def test_missing_yfpy_raises_instead_of_degrading_to_unavailable_result(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A valid secrets file this time (unlike the test above): the failure
+    # this test forces comes from _query_class() itself, standing in for
+    # this environment's yfpy not being importable (or being too old), not
+    # from a missing credential. query is not passed, so fetch_league_settings
+    # must resolve one through build_query, which must resolve _query_class()
+    # outside its own try block. If that call were wrapped in the try
+    # instead, this EngineError would be misread as a Yahoo authentication
+    # failure and this call would wrongly return an unavailable_result
+    # envelope (available=False) rather than raising.
+    secrets_path = tmp_path / "secrets.env"
+    secrets_path.write_text(
+        f"{yc.YAHOO_CLIENT_ID_KEY}=id\n{yc.YAHOO_CLIENT_SECRET_KEY}=secret\n",
+        encoding="utf-8",
+    )
+
+    def _raise_engine_error() -> Any:
+        raise EngineError("yfpy requires Python 3.10 or newer")
+
+    monkeypatch.setattr(yc, "_query_class", _raise_engine_error)
+
+    with pytest.raises(EngineError) as excinfo:
+        yc.fetch_league_settings(
+            league_id="524458", secrets_path=secrets_path, token_dir=tmp_path / "token-dir"
+        )
+    assert type(excinfo.value) is EngineError
+    assert type(excinfo.value) is not YahooUnavailable
+
+
 # --- fetch_rosters: per-team failure handling ---
 
 
@@ -490,6 +525,8 @@ def test_fetch_free_agents_stops_on_short_page() -> None:
     query_calls = [call for call in fq.calls if call[0] == "query"]
     assert len(query_calls) == 2
     assert result["data"]["count"] == 28
+    assert result["data"]["truncated"] is False
+    assert result["data"]["pages_fetched"] == 2
 
 
 def test_fetch_free_agents_honors_limit_trim() -> None:
@@ -502,6 +539,8 @@ def test_fetch_free_agents_honors_limit_trim() -> None:
     query_calls = [call for call in fq.calls if call[0] == "query"]
     assert len(query_calls) == 2  # 25 + 25 >= 30, so paging stops after 2 pages
     assert result["data"]["count"] == 30
+    assert result["data"]["truncated"] is False
+    assert result["data"]["pages_fetched"] == 2
 
 
 def test_fetch_free_agents_hard_caps_at_max_pages() -> None:
@@ -514,6 +553,10 @@ def test_fetch_free_agents_hard_caps_at_max_pages() -> None:
     query_calls = [call for call in fq.calls if call[0] == "query"]
     assert len(query_calls) == 40  # the hard cap, even though limit was never reached
     assert result["data"]["count"] == 1000
+    # Hitting the hard cap is a safety valve, not a page failure: it must
+    # not be reported as a truncated (aborted-by-error) result.
+    assert result["data"]["truncated"] is False
+    assert result["data"]["pages_fetched"] == 40
 
 
 def test_fetch_free_agents_normalizes_a_bare_dict_page() -> None:
@@ -526,6 +569,40 @@ def test_fetch_free_agents_normalizes_a_bare_dict_page() -> None:
     assert len(query_calls) == 1  # a page under 25 entries ends paging
     assert result["data"]["count"] == 1
     assert result["data"]["free_agents"][0]["player_id"] == "solo"
+    assert result["data"]["truncated"] is False
+    assert result["data"]["pages_fetched"] == 1
+
+
+def test_fetch_free_agents_reports_truncated_when_a_later_page_raises() -> None:
+    # Page 1 succeeds with a full page (so paging would otherwise continue),
+    # page 2 raises. This must be reported as available with the page 1
+    # entries kept, but flagged truncated=True rather than looking like a
+    # naturally-ended (short final page) result: a caller ranking waiver
+    # claims must be able to tell "Yahoo ran out of free agents" apart from
+    # "a page failed partway through" instead of silently getting a short
+    # candidate pool with no signal anything went wrong.
+    full_page = [_make_free_agent(f"full-{i}") for i in range(25)]
+    fq = FakeQuery()
+    fq.player_pages = [full_page, RuntimeError("boom")]
+
+    result = yc.fetch_free_agents(query=fq, league_id="524458", limit=50)
+
+    assert result["available"] is True
+    assert result["data"]["count"] == 25
+    assert result["data"]["truncated"] is True
+    assert result["data"]["pages_fetched"] == 1
+
+
+def test_fetch_free_agents_propagates_engine_error_mid_paging() -> None:
+    # A configuration problem raised by a later page must not be misread
+    # as end-of-pages the way a generic Exception is: it has to surface as
+    # a real exception, same as everywhere else in this module.
+    full_page = [_make_free_agent(f"full-{i}") for i in range(25)]
+    fq = FakeQuery()
+    fq.player_pages = [full_page, EngineError("misconfigured")]
+
+    with pytest.raises(EngineError, match="misconfigured"):
+        yc.fetch_free_agents(query=fq, league_id="524458", limit=50)
 
 
 # --- _jsonify: the pass-through seam other chunks call directly ---

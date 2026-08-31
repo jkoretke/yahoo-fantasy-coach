@@ -247,6 +247,30 @@ def test_fetch_projections_wrong_shape_degrades(mock_urlopen, tmp_path: Path) ->
     assert result["data"] is None
 
 
+@patch("engine.sources.sleeper.fetch_cached_json")
+def test_fetch_projections_wrong_shaped_dict_degrades(mock_fetch, tmp_path: Path) -> None:
+    """A well formed but wrong shaped dict (an error body) must not read as an empty legacy payload."""
+    mock_fetch.return_value = ({"error": "not found"}, "2026-09-10T12:00:00Z", False)
+
+    result = sleeper.fetch_projections(2025, 4, cache_root=tmp_path)
+
+    assert result["available"] is False
+    assert result["reason"]
+    assert result["data"] is None
+
+
+@patch("urllib.request.urlopen")
+def test_fetch_projections_wrong_shaped_list_degrades(mock_urlopen, tmp_path: Path) -> None:
+    """A well formed but wrong shaped list (no entry carries a usable player_id) must not read as empty."""
+    mock_urlopen.return_value = _FakeResponse(_fake_body([{"bogus": 1}, {"x": 2}]))
+
+    result = sleeper.fetch_projections(2025, 4, cache_root=tmp_path)
+
+    assert result["available"] is False
+    assert result["reason"]
+    assert result["data"] is None
+
+
 # ---------------------------------------------------------------------------
 # fetch_player_index
 # ---------------------------------------------------------------------------
@@ -426,6 +450,18 @@ def test_fetch_trending_invalid_json_degrades(mock_urlopen, tmp_path: Path) -> N
 @patch("urllib.request.urlopen")
 def test_fetch_trending_wrong_shape_degrades(mock_urlopen, tmp_path: Path) -> None:
     mock_urlopen.return_value = _FakeResponse(_fake_body({"error": "not found"}))
+
+    result = sleeper.fetch_trending("add", cache_root=tmp_path)
+
+    assert result["available"] is False
+    assert result["reason"]
+    assert result["data"] is None
+
+
+@patch("urllib.request.urlopen")
+def test_fetch_trending_wrong_shaped_list_degrades(mock_urlopen, tmp_path: Path) -> None:
+    """A well formed but wrong shaped list (no usable player_id/count entries) must not read as empty."""
+    mock_urlopen.return_value = _FakeResponse(_fake_body([{"bogus": 1}, {"x": 2}]))
 
     result = sleeper.fetch_trending("add", cache_root=tmp_path)
 

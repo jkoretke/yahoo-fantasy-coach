@@ -129,6 +129,7 @@ def test_dome_team_is_available_indoor_and_makes_no_network_call(mock_urlopen, t
     assert result["data"]["roof"] == "dome"
     assert result["data"]["conditions"] is None
     assert result["data"]["flags"] == []
+    assert result["data"]["source_url"] == ""
     assert mock_urlopen.call_count == 0
     assert list(tmp_path.iterdir()) == []
 
@@ -394,6 +395,17 @@ def test_envelope_has_exactly_the_expected_keys_and_is_json_serializable(tmp_pat
     assert set(result.keys()) == {"source", "available", "stale", "reason", "fetched_at", "data"}
     assert result["source"] == weather.SOURCE_NAME
     json.dumps(result)
+
+
+@patch("urllib.request.urlopen")
+def test_dome_and_outdoor_data_dicts_have_the_same_key_set(mock_urlopen, tmp_path: Path) -> None:
+    """A caller must not need to branch on roof type to know which keys are present."""
+    dome_result = weather.fetch_kickoff_weather("MIN", "2026-09-13T17:00:00Z", cache_root=tmp_path)
+
+    mock_urlopen.return_value = _FakeResponse(FIXTURE_PATH.read_bytes())
+    outdoor_result = weather.fetch_kickoff_weather("NE", "2026-09-13T17:00:00Z", cache_root=tmp_path)
+
+    assert set(dome_result["data"].keys()) == set(outdoor_result["data"].keys())
 
 
 # ---------------------------------------------------------------------------

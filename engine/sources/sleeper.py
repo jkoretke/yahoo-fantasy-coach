@@ -179,8 +179,14 @@ def _parse_projections(payload: Any, *, season: int, week: int, source_url: str)
     stats dict), and every value produced from it has "" for name,
     normalized_name, position, nfl_team, opponent and injury_status,
     since that shape carries no player block at all. Anything else (a
-    string, a number, null, a list of non-dicts alongside a dict payload
-    with no dict values) raises _ShapeError.
+    string, a number, or null) raises _ShapeError. A non-empty list or
+    dict payload that yields zero entries (for example a list of
+    non-dicts, a list of dicts none of which carry a usable player_id, or
+    a dict error body like {"error": "not found"} whose only value is a
+    non-dict) also raises _ShapeError, since that is a wrong shaped
+    payload, not a legitimate empty result; a genuinely empty list ([])
+    or dict ({}) still parses to an empty, available result, since that
+    is a legitimate "no projections this week" answer.
     """
     projections: dict[str, Any] = {}
 
@@ -209,6 +215,11 @@ def _parse_projections(payload: Any, *, season: int, week: int, source_url: str)
                 "projected_points": _projected_points(stats),
                 "stats": _clean_stats(stats),
             }
+        if payload and not projections:
+            raise _ShapeError(
+                "sleeper projections payload is a non-empty list but no entry carried "
+                "a usable player_id"
+            )
     elif isinstance(payload, dict):
         for raw_player_id, stats in payload.items():
             if not isinstance(stats, dict):
@@ -227,6 +238,11 @@ def _parse_projections(payload: Any, *, season: int, week: int, source_url: str)
                 "projected_points": _projected_points(stats),
                 "stats": _clean_stats(stats),
             }
+        if payload and not projections:
+            raise _ShapeError(
+                "sleeper projections payload is a non-empty dict but no entry matched "
+                "the legacy player_id -> stats shape"
+            )
     else:
         raise _ShapeError("sleeper projections payload has an unrecognized top level shape")
 
@@ -385,7 +401,13 @@ def _parse_trending(payload: Any, *, kind: str, limit: int, lookback_hours: int)
 
     Raises _ShapeError when payload is not a JSON list. An entry that is
     not a dict, or is missing a usable player_id or an int count, is
-    skipped rather than failing the whole call. Order is preserved.
+    skipped rather than failing the whole call. Order is preserved. A
+    non-empty list that yields zero usable players (for example
+    [{"bogus": 1}, {"x": 2}], where no entry has both a player_id and an
+    int count) also raises _ShapeError, since that is a wrong shaped
+    payload, not a legitimate empty result; a genuinely empty list ([])
+    still parses to an empty, available result, since that is a
+    legitimate "nothing trending right now" answer.
     """
     if not isinstance(payload, list):
         raise _ShapeError("sleeper trending payload is not a JSON list")
@@ -401,6 +423,9 @@ def _parse_trending(payload: Any, *, kind: str, limit: int, lookback_hours: int)
         if not isinstance(count, int) or isinstance(count, bool):
             continue
         players.append({"player_id": str(raw_player_id), "count": count})
+
+    if payload and not players:
+        raise _ShapeError("sleeper trending payload is a non-empty list but no entry was usable")
 
     return {
         "kind": kind,

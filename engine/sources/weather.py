@@ -51,7 +51,22 @@ never a boolean:
   "dome"        a fixed roof with no outdoor exposure at all. A dome game
                 makes no network call and no disk access: the result is
                 reported directly as weather neutral (indoor=True,
-                conditions=None, flags=[]).
+                conditions=None, flags=[], source_url="" since no request
+                is made). source_url is always present in the data dict,
+                on every roof type, so a caller never has to branch on
+                roof before reading it.
+
+ASSUMED HOME VENUE. This module assumes the home team plays at its own
+home stadium, resolving STADIUMS by the home team's abbreviation alone. A
+neutral-site or international game (for example an NFL London or Mexico
+City game) is therefore reported at the home team's usual stadium, with
+that stadium's usual roof and coordinates, which is simply wrong for that
+one game. engine.sources.schedule already surfaces a "neutral_site"
+boolean and the venue's own "city", "state" and "country" on each game it
+returns, so a later phase can check that flag and skip or gate this
+module's result before trusting it for a neutral-site game; this module
+does not read schedule's output itself, on purpose (see STADIUMS below),
+so it cannot make that check on its own.
 
 THRESHOLDS. weather_flags() turns one hour's conditions into a small set of
 plain, deterministic strings, no model judgement involved:
@@ -278,7 +293,11 @@ def fetch_kickoff_weather(
     anything else, so a malformed or naive timestamp always raises
     EngineError, even when enabled is False: that is a programmer error in
     the caller, not a degraded source, and must never be swallowed into a
-    disabled/unavailable result.
+    disabled/unavailable result. This module resolves team to its own home
+    stadium and has no way to tell that a given game is being played at a
+    neutral or international site instead (see ASSUMED HOME VENUE in the
+    module docstring); for a neutral-site game this returns the home
+    team's usual stadium's weather, not the actual game location's.
 
     Order of operations after that parse:
 
@@ -287,8 +306,9 @@ def fetch_kickoff_weather(
       2. team does not resolve to a known stadium (stadium_for_team returns
          None): return unavailable_result(SOURCE_NAME, ...). No network.
       3. The stadium's roof is "dome": return an available result with
-         indoor=True, conditions=None, flags=[]. No network, no disk
-         access, since a dome's conditions are always weather neutral.
+         indoor=True, conditions=None, flags=[], source_url="". No
+         network, no disk access, since a dome's conditions are always
+         weather neutral.
       4. Otherwise ("outdoor" or "retractable"): fetch the day's hourly
          forecast for the stadium's coordinates through fetch_cached_json,
          cached under a key derived from the team and the kickoff date so a
@@ -324,6 +344,7 @@ def fetch_kickoff_weather(
                 "roof": "dome",
                 "kickoff_utc": kickoff_normalized,
                 "indoor": True,
+                "source_url": "",
                 "conditions": None,
                 "flags": [],
             },

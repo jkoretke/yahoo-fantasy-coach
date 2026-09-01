@@ -1,0 +1,91 @@
+name: Bug report
+description: Report something broken in a routine wrapper or the engine
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        You cannot test this against a real Yahoo league. Yahoo API access is per person
+        and approval gated, so a contributor account will not have live league data.
+
+        A reproduction against the checked-in `fixtures/` directory is worth far more than
+        a description of what happened. Every wrapper runs offline, for example:
+        `.venv/bin/python3 -m engine.weekly_run --fixtures --dry-run`. Please try to
+        reproduce it that way first and paste the exact command below.
+  - type: dropdown
+    id: routine
+    attributes:
+      label: Routine
+      description: Which routine does this bug affect
+      options:
+        - weekly_run
+        - gameday_run
+        - waiver_run
+        - inactive_run
+        - other
+    validations:
+      required: true
+  - type: dropdown
+    id: waiver-type
+    attributes:
+      label: League waiver type
+      description: FAAB and rolling priority leagues produce different waiver output, so this matters for waiver_run bugs
+      options:
+        - FAAB
+        - rolling priority
+        - not sure
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Exact command you ran
+      description: Copy the full command, flags included
+      placeholder: ".venv/bin/python3 -m engine.weekly_run --fixtures --dry-run"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Describe the actual output or behavior you saw
+    validations:
+      required: true
+  - type: textarea
+    id: what-expected
+    attributes:
+      label: What you expected
+      description: Describe what you expected to happen instead
+    validations:
+      required: true
+  - type: textarea
+    id: run-json
+    attributes:
+      label: Run JSON
+      description: |
+        Paste the relevant part of the run artifact, found at
+        runs/<season>/wk<NN>/<routine>-<timestamp>.json, as a code block.
+
+        Before pasting: remove anything personal first, and NEVER paste a Yahoo client id,
+        client secret, refresh token, or API key.
+      render: json
+    validations:
+      required: true
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      description: Output of ".venv/bin/python3 --version"
+      placeholder: "Python 3.13.13"
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I reproduced this with --fixtures, so it does not depend on my own Yahoo access
+          required: true
+        - label: This report contains no credentials, tokens or API keys
+          required: true

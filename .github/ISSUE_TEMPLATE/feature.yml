@@ -1,0 +1,56 @@
+name: Feature request
+description: Propose a new capability or a change in behavior
+title: "[feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Every routine wrapper runs offline against the checked-in `fixtures/` directory,
+        since a contributor cannot test against a real Yahoo league (Yahoo API access is
+        per person and approval gated). Please think through how your proposal would be
+        tested against fixtures before opening this request.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve
+      description: Describe the gap or pain point this addresses
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-behavior
+    attributes:
+      label: Proposed behavior
+      description: Describe the behavior you want to see
+    validations:
+      required: true
+  - type: dropdown
+    id: system-part
+    attributes:
+      label: Which part of the system
+      options:
+        - a routine wrapper
+        - scoring or lineup math
+        - waivers
+        - trades
+        - a data source
+        - email or prose
+        - deploy or CI
+        - docs
+        - other
+    validations:
+      required: false
+  - type: textarea
+    id: fixture-testing
+    attributes:
+      label: How would this be tested against fixtures/
+      description: Anything that cannot be exercised offline against fixtures/ is much harder to accept.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I have read CONTRIBUTING.md
+          required: true

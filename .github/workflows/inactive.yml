@@ -1,0 +1,86 @@
+name: inactive
+# Scheduled lane: emails the inactive routine on a cron. Never runs from a pull
+# request, so a fork can never reach these secrets. GitHub Actions cron is UTC
+# only and can run late, sometimes 15 minutes or more.
+#
+# KNOWN GAP: every wrapper exits 0 even when the run failed, so a GREEN JOB HERE
+# DOES NOT MEAN AN EMAIL WAS SENT. Read the STATUS line at the end of the job log:
+# "STATUS emailed inactive" is the only success. "STATUS failed inactive
+# engine-error" means a live run needed an explicit --week NN (nothing resolves the
+# current NFL week yet), and "STATUS failed inactive email-send-failed" means the
+# email backend could not send (for the smtp backend, usually a missing CURLRC
+# secret). The workflow_dispatch input below works today; the schedule path stays
+# blocked until a week resolver exists. Yahoo Fantasy Sports API access is also
+# still pending approval.
+#
+# Required repository secrets: YAHOO_CLIENT_ID, YAHOO_CLIENT_SECRET,
+# YAHOO_REFRESH_TOKEN, LEAGUE_YAML (the whole contents of your config/league.yaml).
+# Optional: BREVO_API_KEY (only for the brevo email backend), CURLRC (only for the
+# smtp email backend, the whole contents of your curl config file).
+on:
+  schedule:
+    - cron: "*/15 * * * 0,1,4"   # every 15 minutes on Sunday, Monday and Thursday; Actions cron cannot hit the box lane's 5 minute precision
+    # Actions cron lateness makes the 75 minute inactive check imprecise in this lane; the systemd box lane is the precise one.
+  workflow_dispatch:
+    inputs:
+      week:
+        description: "NFL week number to run. Required for a live run today."
+        required: false
+        default: ""
+permissions:
+  contents: read
+concurrency:
+  group: inactive
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Write the league config and credentials
+        env:
+          LEAGUE_YAML: ${{ secrets.LEAGUE_YAML }}
+          YAHOO_CLIENT_ID: ${{ secrets.YAHOO_CLIENT_ID }}
+          YAHOO_CLIENT_SECRET: ${{ secrets.YAHOO_CLIENT_SECRET }}
+          YAHOO_REFRESH_TOKEN: ${{ secrets.YAHOO_REFRESH_TOKEN }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          CURLRC: ${{ secrets.CURLRC }}
+        run: |
+          mkdir -p "$HOME/.config/yahoo-fantasy-coach"
+          chmod 700 "$HOME/.config/yahoo-fantasy-coach"
+          printf '%s\n' "$LEAGUE_YAML" > config/league.yaml
+          {
+            printf 'YAHOO_CLIENT_ID=%s\n' "$YAHOO_CLIENT_ID"
+            printf 'YAHOO_CLIENT_SECRET=%s\n' "$YAHOO_CLIENT_SECRET"
+            printf 'BREVO_API_KEY=%s\n' "$BREVO_API_KEY"
+          } > "$HOME/.config/yahoo-fantasy-coach/secrets.env"
+          chmod 600 "$HOME/.config/yahoo-fantasy-coach/secrets.env"
+          {
+            printf 'YAHOO_CONSUMER_KEY=%s\n' "$YAHOO_CLIENT_ID"
+            printf 'YAHOO_CONSUMER_SECRET=%s\n' "$YAHOO_CLIENT_SECRET"
+            printf 'YAHOO_REFRESH_TOKEN=%s\n' "$YAHOO_REFRESH_TOKEN"
+          } > "$HOME/.config/yahoo-fantasy-coach/.env"
+          chmod 600 "$HOME/.config/yahoo-fantasy-coach/.env"
+          # Only for the smtp email backend. An EMPTY curlrc is worse than none at
+          # all: engine.notify gates on the file existing, so write it only when the
+          # secret is actually set.
+          if [ -n "$CURLRC" ]; then
+            printf '%s\n' "$CURLRC" > "$HOME/.config/yahoo-fantasy-coach/curlrc"
+            chmod 600 "$HOME/.config/yahoo-fantasy-coach/curlrc"
+          fi
+      - name: Run the inactive routine
+        env:
+          WEEK: ${{ github.event.inputs.week }}
+        run: |
+          if [ -n "$WEEK" ]; then
+            python -m engine.inactive_run --prose plain --week "$WEEK"
+          else
+            python -m engine.inactive_run --prose plain
+          fi

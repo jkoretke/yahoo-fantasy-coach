@@ -1,0 +1,9 @@
+# CODEOWNERS
+#
+# This file makes the listed owner a required reviewer on every file in the
+# repository, once a branch protection ruleset that requires code owner
+# review is applied to the default branch. It has no effect on its own; it
+# only takes effect when that ruleset is turned on.
+#
+# One rule, applying to every path in the repo:
+* @jkoretke

@@ -4,7 +4,7 @@ Reads your Yahoo Fantasy Football league (read only, the API grants no write acc
 computes the week's optimal lineup, start/sit calls, matchup projection, waiver targets,
 and trade ideas, then hands you the decisions. You tap the moves into the Yahoo app
 yourself. Python computes every number and every verdict; Claude only writes the prose,
-checked against the JSON Python produced. See `docs/plan.md` for the full design.
+checked against the JSON Python produced.
 
 ## Run it with Claude Code (start here)
 
@@ -112,8 +112,7 @@ so there is no published turnaround time.
    further action on your end until Yahoo responds.
 
 Nothing that touches Yahoo (`engine/yahoo_client.py` and anything built on it) can be used for
-real until this application is approved. See `docs/plan.md`'s Phase 3 entry for what proceeds in
-the meantime.
+real until this application is approved. See `docs/setup.md` for what runs in the meantime.
 
 ## Optional: get it emailed on a schedule
 

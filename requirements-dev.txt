@@ -1,0 +1,10 @@
+# Development and CI dependencies only. Runtime dependencies live in
+# requirements.txt.
+#
+# Install with:
+#   .venv/bin/python3 -m pip install -r requirements-dev.txt
+-r requirements.txt
+
+# ruff is the linter run by .github/workflows/ci.yml alongside pytest.
+# It uses ruff's default rule set, no custom configuration file, deliberately.
+ruff==0.16.5

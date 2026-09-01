@@ -1,0 +1,23 @@
+name: ci
+# Offline fixture suite plus lint. Runs with no credentials at all, which is
+# the point: a fork's pull request must never see a secret.
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: Tests
+        run: python -m pytest -q
+      - name: Lint
+        run: python -m ruff check .

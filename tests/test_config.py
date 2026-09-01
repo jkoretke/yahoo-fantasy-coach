@@ -16,6 +16,10 @@ def test_example_file_loads_and_validates() -> None:
     assert result["sources"]["sleeper"] is True
 
 
+@pytest.mark.skipif(
+    not config.LEAGUE_CONFIG_PATH.exists(),
+    reason="config/league.yaml is gitignored and untracked; absent on a fresh checkout",
+)
 def test_shipped_league_yaml_loads_and_validates() -> None:
     result = config.load_league_config(config.LEAGUE_CONFIG_PATH)
     assert result["email"]["backend"] in config.EMAIL_BACKENDS
@@ -156,7 +160,16 @@ def test_claude_config_has_exactly_the_documented_keys() -> None:
 
 @pytest.mark.parametrize(
     "path_attr",
-    ["LEAGUE_CONFIG_PATH", "LEAGUE_EXAMPLE_CONFIG_PATH"],
+    [
+        pytest.param(
+            "LEAGUE_CONFIG_PATH",
+            marks=pytest.mark.skipif(
+                not config.LEAGUE_CONFIG_PATH.exists(),
+                reason="config/league.yaml is gitignored and untracked; absent on a fresh checkout",
+            ),
+        ),
+        "LEAGUE_EXAMPLE_CONFIG_PATH",
+    ],
 )
 def test_explicit_path_to_shipped_files_has_every_documented_key(
     path_attr: str,

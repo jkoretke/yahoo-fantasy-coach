@@ -74,9 +74,19 @@ legal: include only the keys you want to change. The keys that matter most:
 ## Credentials
 
 See README.md, "Yahoo API setup (do this first, one time)" for how to create a
-Yahoo developer app and obtain your client id, client secret, and refresh token.
-That is a one-time interactive step and is not repeated here; this section only
-documents where those values live once you have them.
+Yahoo developer app and obtain your client id and client secret. That covers
+creating the app and applying for Fantasy Sports API access; it does not by
+itself produce a refresh token.
+
+The refresh token comes later, from `yfpy` itself: the first time you run the
+engine against real (non-fixtures) data on a machine with a browser, `yfpy`
+opens Yahoo's OAuth consent screen for a one-time interactive sign-in, then
+writes `YAHOO_REFRESH_TOKEN` into `~/.config/yahoo-fantasy-coach/.env` (see
+below) for every run after that. This step cannot happen until Yahoo has
+approved the Fantasy Sports API access application from README.md's step 2.
+Once it has run once, read the value back out of that `.env` file to paste
+into the `YAHOO_REFRESH_TOKEN` secret used by the box and Actions lanes below.
+This section documents where all three values live once you have them.
 
 - `~/.config/yahoo-fantasy-coach/secrets.env`, directory mode 700, file mode 600.
   Holds `YAHOO_CLIENT_ID` and `YAHOO_CLIENT_SECRET`, plus `BREVO_API_KEY` if (and

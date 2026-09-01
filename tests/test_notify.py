@@ -19,7 +19,6 @@ from unittest.mock import patch
 import pytest
 
 from engine.notify import (
-    BREVO_API_KEY_SECRET,
     DEFAULT_BREVO_API_BASE_URL,
     DEFAULT_FROM_NAME,
     build_message,

@@ -38,7 +38,12 @@ from engine.fixtures import free_agent_ids, get_player, get_team
 # DEFAULT_TOSS_UP_MARGIN_POINTS is imported rather than redeclared here, so
 # the whole engine shares docs/plan.md's one toss up margin instead of
 # carrying a second, easy to drift, copy of the same number.
-from engine.lineup import DEFAULT_TOSS_UP_MARGIN_POINTS, EXCLUDED_STATUSES, is_startable, optimal_lineup
+from engine.lineup import (  # noqa: F401 - EXCLUDED_STATUSES kept per this module's own comment above
+    DEFAULT_TOSS_UP_MARGIN_POINTS,
+    EXCLUDED_STATUSES,
+    is_startable,
+    optimal_lineup,
+)
 from engine.scoring import projected_points_by_player
 
 # The bar a single week projected points gain must clear to be worth

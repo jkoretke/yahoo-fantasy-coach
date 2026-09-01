@@ -1,0 +1,9 @@
+# Pin ruff to its classic default lint selection: pyflakes (F) plus the
+# small pycodestyle error subset (E4, E7, E9) not already handled by a
+# formatter. Ruff 0.16.5 enables a much larger rule set out of the box when
+# no config narrows it, which flags dozens of pre-existing style choices
+# across engine/* and tests/* that Phase 5 is not in scope to mass-reformat.
+# This file exists only to restore that narrower default, not to add any
+# project-specific strictness on top of it.
+[lint]
+select = ["E4", "E7", "E9", "F"]

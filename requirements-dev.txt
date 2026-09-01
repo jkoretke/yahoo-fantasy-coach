@@ -6,5 +6,10 @@
 -r requirements.txt
 
 # ruff is the linter run by .github/workflows/ci.yml alongside pytest.
-# It uses ruff's default rule set, no custom configuration file, deliberately.
+# ruff.toml at the repo root pins it to ruff's classic default selection
+# (E4, E7, E9, F). Ruff 0.16.5's own built-in default, with no config at all,
+# enables a much larger rule set that flags dozens of pre-existing style
+# choices across code this phase is not in scope to reformat, so the config
+# file exists to restore that narrower default, not to add project-specific
+# strictness.
 ruff==0.16.5

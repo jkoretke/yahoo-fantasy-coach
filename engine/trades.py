@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from engine.common import EngineError, round_points
+from engine.common import round_points
 from engine.fixtures import get_player, get_team, starting_slot_units, team_roster_player_ids
 from engine.lineup import is_startable
 from engine.scoring import projected_points_by_player
@@ -236,7 +236,7 @@ def trade_ideas(
     if points is None:
         points = projected_points_by_player(league, week)
 
-    get_team(league, team_id)  # raises EngineError naming an unknown team_id
+    get_team(league, team_id)  # raises engine.common.EngineError naming an unknown team_id
 
     table = league_position_table(league, week, points=points)
     owner_inventory = table[team_id]

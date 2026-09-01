@@ -23,6 +23,8 @@ Cache: a small per-run disk cache under CACHE_ROOT (or an override,
     is the fallback when the network fails" policy that keeps a rate limit
     or an outage from breaking a scheduled run. A corrupt or missing cache
     file always reads as a plain cache miss, never an exception.
+    prune_cache deletes entries nothing will ever serve again, so the
+    directory does not grow without bound on a long lived box deploy.
 
 Result envelope: source_result, disabled_result and unavailable_result give
     every source module's public function the same plain, JSON serializable
@@ -35,10 +37,11 @@ because engine.sources.sleeper and engine.sources.injuries both need them
 and neither may depend on the other.
 
 Public names: SourceUnavailable, CACHE_ROOT, DEFAULT_TIMEOUT_SECONDS,
-DEFAULT_MAX_AGE_SECONDS, DISABLED_REASON, SOURCE_RESULT_KEYS,
-TEAM_ABBREVIATION_ALIASES, fetch_json, cache_path, read_cache, write_cache,
-cache_age_seconds, fetch_cached_json, source_result, disabled_result,
-unavailable_result, normalize_name, normalize_team_abbreviation.
+DEFAULT_MAX_AGE_SECONDS, CACHE_PRUNE_MAX_AGE_SECONDS, DISABLED_REASON,
+SOURCE_RESULT_KEYS, TEAM_ABBREVIATION_ALIASES, fetch_json, cache_path,
+read_cache, write_cache, cache_age_seconds, prune_cache, fetch_cached_json,
+source_result, disabled_result, unavailable_result, normalize_name,
+normalize_team_abbreviation.
 """
 from __future__ import annotations
 
@@ -57,6 +60,12 @@ from engine.common import EngineError, REPO_ROOT, timestamp, write_json
 CACHE_ROOT: Path = REPO_ROOT / "runs" / "cache"
 DEFAULT_TIMEOUT_SECONDS: float = 20.0
 DEFAULT_MAX_AGE_SECONDS: int = 21600
+# Seven days. Deliberately far longer than any source's own max age: an
+# entry this old is past being served fresh AND past being worth serving
+# stale by every source in this repo, so deleting it can change no run's
+# outcome. A module constant rather than a config key on purpose, since one
+# more setting to validate, document and keep true buys nothing here.
+CACHE_PRUNE_MAX_AGE_SECONDS: int = 7 * 86400
 DISABLED_REASON: str = "disabled"
 SOURCE_RESULT_KEYS: tuple[str, ...] = (
     "source",
@@ -230,6 +239,64 @@ def cache_age_seconds(entry: dict[str, Any], now: datetime | None = None) -> flo
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return (now - parsed).total_seconds()
+
+
+def prune_cache(
+    cache_root: Path | None = None,
+    *,
+    max_age_seconds: int = CACHE_PRUNE_MAX_AGE_SECONDS,
+) -> int:
+    """Delete cache entries older than max_age_seconds. Return how many went.
+
+    cache_root defaults to CACHE_ROOT. Only files directly inside it whose
+    name ends in ".json" are considered, so nothing outside this module's
+    own cache format is ever touched.
+
+    A file is deleted when its envelope's "fetched_at" is older than
+    max_age_seconds, and also when the envelope cannot be read at all: a
+    corrupt or truncated file is already a permanent cache miss to
+    read_cache (cache_age_seconds reports it as infinitely old), so
+    keeping it only costs disk.
+
+    Never raises. Every OSError is swallowed, one file at a time, exactly
+    like write_cache: pruning is housekeeping, and a locked or unreadable
+    file must never turn a successful run into a failed one. A missing
+    cache directory is simply nothing to do.
+    """
+    if cache_root is None:
+        cache_root = CACHE_ROOT
+
+    try:
+        entries = sorted(cache_root.glob("*.json"))
+    except OSError:
+        return 0
+
+    removed = 0
+    for path in entries:
+        try:
+            if not path.is_file():
+                continue
+        except OSError:
+            continue
+
+        entry: dict[str, Any] | None
+        try:
+            with path.open("r", encoding="utf-8") as handle:
+                loaded = json.load(handle)
+            entry = loaded if isinstance(loaded, dict) else None
+        except (OSError, ValueError):
+            entry = None
+
+        if entry is not None and cache_age_seconds(entry) <= max_age_seconds:
+            continue
+
+        try:
+            path.unlink()
+        except OSError:
+            continue
+        removed += 1
+
+    return removed
 
 
 def fetch_cached_json(

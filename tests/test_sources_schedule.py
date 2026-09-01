@@ -428,3 +428,96 @@ def test_game_for_team_garbage_input_returns_none() -> None:
     assert schedule.game_for_team({}, "SEA") is None
     assert schedule.game_for_team(None, "SEA") is None
     assert schedule.game_for_team({"games": []}, "") is None
+
+
+# ---------------------------------------------------------------------------
+# fetch_current_week: "which week is it right now"
+# ---------------------------------------------------------------------------
+
+
+# The live no-query-string response's own shape, recorded against the real
+# endpoint on 2026-08-31. Only the three keys this function reads are kept.
+CURRENT_PAYLOAD = {
+    "season": {"type": 2, "year": 2026},
+    "week": {"number": 1},
+    "events": [],
+}
+
+
+@patch("engine.sources.schedule.fetch_cached_json")
+def test_fetch_current_week_reads_season_and_week(mock_fetch, tmp_path: Path) -> None:
+    mock_fetch.return_value = (CURRENT_PAYLOAD, "2026-08-31T12:00:00Z", False)
+
+    result = schedule.fetch_current_week(cache_root=tmp_path)
+
+    assert result["available"] is True
+    assert result["stale"] is False
+    assert result["data"] == {
+        "season": 2026,
+        "week": 1,
+        "season_type": 2,
+        "source_url": schedule.CURRENT_SCOREBOARD_URL,
+    }
+    # No dates/seasontype/week query string: that is what makes the answer
+    # "now" rather than a week the caller already had to know.
+    assert mock_fetch.call_args[0][0] == schedule.CURRENT_SCOREBOARD_URL
+    assert "?" not in mock_fetch.call_args[0][0]
+
+
+@patch("engine.sources.schedule.fetch_cached_json")
+def test_fetch_current_week_refuses_a_stale_cache_entry(mock_fetch, tmp_path: Path) -> None:
+    # The one place in this module where stale data does NOT beat no data:
+    # a stale week number silently runs the whole week against the wrong
+    # week's games. See fetch_current_week's own docstring.
+    mock_fetch.return_value = (CURRENT_PAYLOAD, "2026-08-24T12:00:00Z", True)
+
+    result = schedule.fetch_current_week(cache_root=tmp_path)
+
+    assert result["available"] is False
+    assert "stale" in result["reason"]
+    assert result["data"] is None
+
+
+@patch("engine.sources.schedule.fetch_cached_json")
+def test_fetch_current_week_uses_a_short_max_age_by_default(mock_fetch, tmp_path: Path) -> None:
+    mock_fetch.return_value = (CURRENT_PAYLOAD, "2026-08-31T12:00:00Z", False)
+
+    schedule.fetch_current_week(cache_root=tmp_path)
+
+    assert mock_fetch.call_args.kwargs["max_age_seconds"] == schedule.CURRENT_WEEK_MAX_AGE_SECONDS
+    assert schedule.CURRENT_WEEK_MAX_AGE_SECONDS < schedule.SCHEDULE_MAX_AGE_SECONDS
+
+
+def test_fetch_current_week_disabled_makes_no_calls(tmp_path: Path) -> None:
+    with patch("engine.sources.schedule.fetch_cached_json") as mock_fetch:
+        result = schedule.fetch_current_week(enabled=False, cache_root=tmp_path)
+    assert result["available"] is False
+    assert result["reason"] == "disabled"
+    mock_fetch.assert_not_called()
+
+
+@patch("engine.sources.schedule.fetch_cached_json")
+@pytest.mark.parametrize(
+    "payload",
+    [
+        [],
+        {"week": {"number": 1}},
+        {"season": {"type": 2, "year": 2026}},
+        {"season": {"type": 2}, "week": {"number": 1}},
+        {"season": {"type": 2, "year": 2026}, "week": {"number": "one"}},
+        {"season": {"type": 2, "year": 2026}, "week": {"number": True}},
+    ],
+)
+def test_fetch_current_week_bad_shapes_degrade(mock_fetch, payload, tmp_path: Path) -> None:
+    mock_fetch.return_value = (payload, "2026-08-31T12:00:00Z", False)
+    result = schedule.fetch_current_week(cache_root=tmp_path)
+    assert result["available"] is False
+    assert result["data"] is None
+
+
+@patch("engine.sources.schedule.fetch_cached_json")
+def test_fetch_current_week_dead_endpoint_degrades(mock_fetch, tmp_path: Path) -> None:
+    mock_fetch.side_effect = schedule.SourceUnavailable("espn unreachable")
+    result = schedule.fetch_current_week(cache_root=tmp_path)
+    assert result["available"] is False
+    assert "espn unreachable" in result["reason"]

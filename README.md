@@ -135,10 +135,10 @@ Be honest about precision here: GitHub Actions cron can fire 15 minutes or more 
 That is fine for the weekly and waiver runs, but it makes the 75 minute pre-kickoff
 check in the inactive workflow imprecise in this lane.
 
-One more honest gap in both lanes: a live scheduled run still needs an explicit
-`--week` today, and a run that failed still exits 0, so read the `STATUS` line in the
-log rather than trusting a green job or a clean systemd unit. See docs/setup.md's
-Known gaps section.
+A run that failed exits non-zero in both lanes, so a red job or a failed systemd
+unit is a real failure. A legitimate skip (no games today, not yet inside the
+kickoff window) exits 0. The `STATUS` line at the end of the log says which of the
+two it was. See docs/setup.md's Known gaps section.
 
 ## Configuration
 
@@ -172,3 +172,10 @@ see `LICENSE`.
 Fantasy data provided by Yahoo Fantasy
 
 Additional data comes from Sleeper, ESPN's public endpoints, and Open-Meteo.
+
+The weekly routine also runs a news pass: Claude searches the web for late breaking
+news about the players your brief already names, and reports only what it read.
+Python still computes every number and every verdict; the news is context, not a
+decision. It is the one data source that costs anything to run, so only the weekly
+routine asks it, once per run, and never on a `--fixtures` run. Turn it off with
+`sources.news: false` in `config/league.yaml`.

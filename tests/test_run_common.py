@@ -510,3 +510,144 @@ def test_no_em_dash_in_run_common_source():
 def test_no_em_dash_in_prompt_files(relative_path):
     text = (run_common.REPO_ROOT / relative_path).read_text(encoding="utf-8")
     assert _EM_DASH not in text
+
+
+# ---------------------------------------------------------------------------
+# exit_code: which STATUS outcomes mean the run failed
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("outcome", ["emailed", "dry-run", "skipped"])
+def test_exit_code_treats_every_non_failed_outcome_as_success(outcome):
+    assert run_common.exit_code(outcome) == 0
+
+
+def test_exit_code_failed_is_one():
+    assert run_common.exit_code(run_common.FAILED_OUTCOME) == 1
+    assert run_common.FAILED_OUTCOME == "failed"
+
+
+def test_skipped_is_a_success_so_a_quiet_sunday_raises_no_alert():
+    # inactive_run prints "STATUS skipped not-yet" on nearly every one of
+    # its five-minute fires, and gameday_run prints "STATUS skipped
+    # no-games" on every day none of the owner's players play. A non-zero
+    # exit on either would mean an OnFailure alert every five minutes.
+    assert run_common.exit_code("skipped") == 0
+
+
+def test_print_status_returns_the_matching_exit_code(capsys):
+    assert run_common.print_status("emailed", "weekly") == 0
+    assert run_common.print_status("failed", "weekly", "engine-error") == 1
+    lines = [line for line in capsys.readouterr().out.splitlines() if line.strip()]
+    assert lines == ["STATUS emailed weekly", "STATUS failed weekly engine-error"]
+
+
+# ---------------------------------------------------------------------------
+# resolve_week: which NFL week a live run is for
+# ---------------------------------------------------------------------------
+
+
+def _week_config(season=2026):
+    config = load_league_config()
+    config["league"]["season"] = season
+    return config
+
+
+def _current_week_envelope(*, season=2026, week=3, season_type=2, available=True):
+    if not available:
+        return {
+            "source": "schedule", "available": False, "stale": False,
+            "reason": "espn unreachable", "fetched_at": None, "data": None,
+        }
+    return {
+        "source": "schedule", "available": True, "stale": False, "reason": None,
+        "fetched_at": "2026-09-23T12:00:00Z",
+        "data": {
+            "season": season, "week": week, "season_type": season_type,
+            "source_url": "https://example.invalid/scoreboard",
+        },
+    }
+
+
+def test_resolve_week_explicit_wins_and_never_calls_the_network(monkeypatch):
+    def _never(*args, **kwargs):
+        raise AssertionError("fetch_current_week must not be called for an explicit week")
+
+    monkeypatch.setattr(run_common.schedule_source, "fetch_current_week", _never)
+    assert run_common.resolve_week(7, _week_config()) == 7
+
+
+def test_resolve_week_reads_espns_current_week(monkeypatch):
+    monkeypatch.setattr(
+        run_common.schedule_source,
+        "fetch_current_week",
+        lambda **kwargs: _current_week_envelope(week=3),
+    )
+    assert run_common.resolve_week(None, _week_config()) == 3
+
+
+def test_resolve_week_preseason_resolves_to_week_one(monkeypatch):
+    monkeypatch.setattr(
+        run_common.schedule_source,
+        "fetch_current_week",
+        lambda **kwargs: _current_week_envelope(week=4, season_type=1),
+    )
+    # Preseason week 4 is not fantasy week 4. Week 1 is the next real week.
+    assert run_common.resolve_week(None, _week_config()) == 1
+
+
+def test_resolve_week_postseason_raises_rather_than_taking_week_one(monkeypatch):
+    # ESPN restarts week numbering at 1 for the wild card round, so taking
+    # that number would silently run January against the regular season's
+    # week 1. This is the failure this branch exists to prevent.
+    monkeypatch.setattr(
+        run_common.schedule_source,
+        "fetch_current_week",
+        lambda **kwargs: _current_week_envelope(week=1, season_type=3),
+    )
+    with pytest.raises(EngineError) as excinfo:
+        run_common.resolve_week(None, _week_config())
+    assert "postseason" in str(excinfo.value)
+
+
+def test_resolve_week_season_mismatch_raises(monkeypatch):
+    monkeypatch.setattr(
+        run_common.schedule_source,
+        "fetch_current_week",
+        lambda **kwargs: _current_week_envelope(season=2027, week=1),
+    )
+    with pytest.raises(EngineError) as excinfo:
+        run_common.resolve_week(None, _week_config(season=2026))
+    assert "2027" in str(excinfo.value)
+
+
+def test_resolve_week_unavailable_source_raises(monkeypatch):
+    monkeypatch.setattr(
+        run_common.schedule_source,
+        "fetch_current_week",
+        lambda **kwargs: _current_week_envelope(available=False),
+    )
+    with pytest.raises(EngineError) as excinfo:
+        run_common.resolve_week(None, _week_config())
+    assert "--week" in str(excinfo.value)
+
+
+@pytest.mark.parametrize("season_type", [0, 4, "2"])
+def test_resolve_week_unknown_season_type_raises(monkeypatch, season_type):
+    monkeypatch.setattr(
+        run_common.schedule_source,
+        "fetch_current_week",
+        lambda **kwargs: _current_week_envelope(season_type=season_type),
+    )
+    with pytest.raises(EngineError):
+        run_common.resolve_week(None, _week_config())
+
+
+def test_resolve_week_zero_week_raises(monkeypatch):
+    monkeypatch.setattr(
+        run_common.schedule_source,
+        "fetch_current_week",
+        lambda **kwargs: _current_week_envelope(week=0),
+    )
+    with pytest.raises(EngineError):
+        run_common.resolve_week(None, _week_config())

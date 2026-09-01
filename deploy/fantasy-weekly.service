@@ -19,18 +19,19 @@ Environment=PATH=/home/jeff/.local/bin:/usr/local/bin:/usr/bin:/bin
 # by hand on the box, next to ~/.config/yahoo-fantasy-coach/secrets.env. See
 # docs/setup.md.
 ExecStartPre=/usr/bin/git pull --rebase
-# KNOWN GAP, read before enabling this unit. Every wrapper returns 0 from main()
-# on EVERY failure path, so systemd sees success and the OnFailure= line above does
-# NOT fire. Two failures look exactly like a good run:
-#   1. A live (non-fixtures) run currently requires an explicit --week NN. Nothing
-#      in the engine resolves the current NFL week yet. Without it the wrapper
-#      raises EngineError, catches it, prints "STATUS failed <routine> engine-error"
-#      and exits 0.
+# Exit codes, read before enabling this unit. The wrapper's exit code follows its own
+# STATUS line: 0 when it emailed, previewed, or legitimately skipped, and 1 on any
+# "failed" outcome, which DOES trip the OnFailure= line above. Both failures that
+# used to be silent now reach that alert:
+#   1. A live run with no --week resolves the current NFL week from ESPN
+#      (engine.run_common.resolve_week). A week it cannot resolve confidently is a
+#      hard failure rather than a guess: "STATUS failed <routine> engine-error",
+#      exit 1. Add --week NN to the ExecStart below to override it.
 #   2. An email that could not be sent prints "STATUS failed <routine>
-#      email-send-failed" and also exits 0.
-# The STATUS line in journalctl -u <unit> is the only record of either. Do not enable
-# this timer for live use until a current-week resolver exists (or until this
-# ExecStart carries --week), and check the journal rather than the unit state.
+#      email-send-failed" and exits 1.
+# A legitimate skip ("STATUS skipped no-games", "STATUS skipped not-yet") stays exit 0
+# on purpose, so a quiet Sunday raises no alert every five minutes. The STATUS line in
+# journalctl -u <unit> is still the fuller record of what actually happened.
 # Also confirm that the `claude` binary resolves under the Environment=PATH above:
 # engine.run_common.run_claude spawns a bare `claude` and does NOT catch
 # FileNotFoundError, so a live run with prose enabled crashes this unit if claude is

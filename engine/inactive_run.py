@@ -7,9 +7,11 @@ engine/blog_run.py: assemble a run's data, compose exactly one email for it
 (Claude prose when available and it passes the gate, a fully deterministic
 rendering otherwise), send or preview that one email, then print a machine
 readable STATUS line as the very last thing this process writes to stdout.
-The wrapper always exits 0, including when an engine.common.EngineError is
-raised anywhere in the flow, so a scheduler's OnFailure alert only fires if
-this process itself is killed.
+The wrapper's exit code follows that STATUS line and nothing else: 0 when the
+run did its job (emailed, dry-run, or a legitimate skip), 1 when it printed a
+"failed" outcome, including when an engine.common.EngineError is caught
+anywhere in the flow. That is what makes a scheduler's OnFailure alert able to
+see a failure this process handled itself, not only one that killed it.
 
 On a live (non-fixtures) run, the schedule is fetched through
 engine.sources.schedule.fetch_week_schedule, honoring config's
@@ -86,6 +88,7 @@ from engine.fixtures import (
 )
 from engine.lineup import EXCLUDED_STATUSES, is_startable
 from engine.live_league import build_live_league
+from engine.sources.base import prune_cache
 from engine.sources.schedule import fetch_week_schedule
 from engine.timing import (
     DEFAULT_INACTIVE_WINDOW_MINUTES,
@@ -231,7 +234,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "Week number (default: the league's current week for a fixtures "
-            "run; required for a live run)."
+            "run; ESPN's own current week for a live run, see "
+            "engine.run_common.resolve_week)."
         ),
     )
     parser.add_argument(
@@ -284,7 +288,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the inactive routine once. Always returns 0.
+    """Run the inactive routine once. Returns 0, or 1 on a failed outcome.
 
     On success prints, in order: nothing at all on the no-games, not-yet or
     no-change skip paths; otherwise the composed email (deliver's own
@@ -300,8 +304,8 @@ def main(argv: list[str] | None = None) -> int:
     An engine.common.EngineError raised anywhere in the flow (a bad
     config, an unresolvable week on a live run, a bad routine label, and
     so on) is caught here, reported to stderr as one line, and reported as
-    "STATUS failed inactive <token>" instead of propagating, so this
-    process always exits 0. <token> is a short, fixed, kebab-case slug of
+    "STATUS failed inactive <token>" instead of propagating, and this
+    process then exits 1. <token> is a short, fixed, kebab-case slug of
     the error's class name (engine.run_common.error_status_token, e.g.
     "engine-error"), never the free-text message itself: the full message
     is still on the stderr line printed immediately before it.
@@ -316,21 +320,22 @@ def main(argv: list[str] | None = None) -> int:
         if args.timeout is not None:
             config["claude"]["timeout_seconds"] = args.timeout
 
+        if not args.fixtures:
+            # Housekeeping, once per live run: runs/cache/ otherwise grows
+            # without bound on a long lived box deploy. Never raises, and a
+            # --fixtures run reads no cache at all, so it prunes nothing.
+            prune_cache()
+
         if args.fixtures:
             fixture_dir = Path(args.fixture_dir) if args.fixture_dir else None
             league = load_fixture_league(fixture_dir)
+            week = args.week if args.week is not None else league["current_week"]
         else:
-            if args.week is None:
-                raise EngineError(
-                    "--week is required for a live (non-fixtures) run: the "
-                    "current week cannot be known before the live league is "
-                    "fetched, and fetching the live league itself needs a "
-                    "week to fetch."
-                )
+            week = run_common.resolve_week(args.week, config)
             league = build_live_league(
                 league_id=config["league"]["league_id"],
                 season=config["league"]["season"],
-                week=args.week,
+                week=week,
                 game_id=config["league"]["game_id"],
                 sources_enabled={
                     name: source_enabled(config, name) for name in SOURCE_NAMES
@@ -338,7 +343,6 @@ def main(argv: list[str] | None = None) -> int:
             )
 
         team_id = args.team or config["league"]["team_id"] or owner_team_id(league)
-        week = args.week if args.week is not None else league["current_week"]
 
         if args.schedule is not None:
             schedule_data = load_fixture_schedule(Path(args.schedule))
@@ -354,8 +358,7 @@ def main(argv: list[str] | None = None) -> int:
                 # routine cannot decide anything about kickoff timing
                 # without a schedule, so there is no safe way to tell that
                 # apart from a real no-games day other than saying so.
-                run_common.print_status("failed", ROUTINE, "schedule-unavailable")
-                return 0
+                return run_common.print_status("failed", ROUTINE, "schedule-unavailable")
             schedule_data = schedule_result["data"]
 
         now_value = args.now if args.now is not None else datetime.now(timezone.utc)
@@ -364,12 +367,10 @@ def main(argv: list[str] | None = None) -> int:
         kickoff = next_kickoff(schedule_data, now_value, teams)
 
         if kickoff is None:
-            run_common.print_status("skipped", "no-games")
-            return 0
+            return run_common.print_status("skipped", "no-games")
 
         if not inside_window(kickoff, now_value, args.window_minutes):
-            run_common.print_status("skipped", "not-yet")
-            return 0
+            return run_common.print_status("skipped", "not-yet")
 
         brief: dict[str, Any] = brief_module.build_brief(league, team_id, week, ROUTINE)
         brief = run_common.apply_toss_up_margin(brief, toss_up_margin(config))
@@ -387,8 +388,7 @@ def main(argv: list[str] | None = None) -> int:
         ]
 
         if not changes_to_send:
-            run_common.print_status("skipped", "no-change")
-            return 0
+            return run_common.print_status("skipped", "no-change")
 
         subject, body, _source = run_common.compose_email(
             ROUTINE,
@@ -410,17 +410,15 @@ def main(argv: list[str] | None = None) -> int:
             write_sent(path, already_sent | new_keys)
 
         if args.dry_run:
-            run_common.print_status("dry-run", ROUTINE)
+            return run_common.print_status("dry-run", ROUTINE)
         elif sent:
-            run_common.print_status("emailed", ROUTINE)
+            return run_common.print_status("emailed", ROUTINE)
         else:
-            run_common.print_status("failed", ROUTINE, "email-send-failed")
+            return run_common.print_status("failed", ROUTINE, "email-send-failed")
 
     except EngineError as error:
         print(f"engine.inactive_run: {error}", file=sys.stderr)
-        run_common.print_status("failed", ROUTINE, run_common.error_status_token(error))
-
-    return 0
+        return run_common.print_status("failed", ROUTINE, run_common.error_status_token(error))
 
 
 if __name__ == "__main__":

@@ -45,8 +45,8 @@ read defensively throughout, and any draft string, including an empty
 one or arbitrary decoded bytes, is valid input.
 
 Public names: START_WORDS, BENCH_WORDS, CLAIM_WORDS, SKIP_WORDS,
-ALLOWED_CAPITALIZED_WORDS, brief_player_names, brief_verdicts,
-toss_up_player_ids, check_draft, format_violations.
+ALLOWED_CAPITALIZED_WORDS, brief_player_names, brief_player_display_names,
+brief_verdicts, toss_up_player_ids, check_draft, format_violations.
 """
 from __future__ import annotations
 
@@ -166,25 +166,68 @@ def brief_player_names(brief: dict[str, Any]) -> dict[str, str]:
     is skipped), lineup_changes (both the start and sit side of each
     entry), waivers.targets (both the target player and the player it
     would drop), matchup.team and matchup.opponent assignments, every
-    named side of matchup.slot_edges, and, when present, trades.ideas
-    (both the send and the receive side of each idea). Any of these
-    sections may be absent from brief; a missing section simply
-    contributes no names.
+    named side of matchup.slot_edges, when present trades.ideas (both the
+    send and the receive side of each idea), and when present news.items
+    (the player each news item is about). Any of these sections may be
+    absent from brief; a missing section simply contributes no names.
 
-    trades is not part of engine.brief.build_brief's own shape (a trade
-    partner's roster reaches across every team in the league, which
-    nothing else in brief ever names): engine.run_common.compose_email
-    attaches it under brief["trades"], in engine.trades.trade_ideas's own
-    return shape, only when a caller actually supplied trades data, so
-    that a drafted mention of a trade partner's player is recognized
-    rather than rejected as an unknown name.
+    Neither trades nor news is part of engine.brief.build_brief's own
+    shape, and both are attached by engine.run_common.compose_email only
+    when a caller actually supplied that data:
+
+    - trades, under brief["trades"] in engine.trades.trade_ideas's return
+      shape, because a trade partner's roster reaches across every team in
+      the league, which nothing else in brief ever names.
+    - news, under brief["news"] in engine.sources.news.fetch_news's return
+      shape, because a news item may legitimately name a player the brief
+      does not (the backup expected to start in an injured starter's
+      place, say).
+
+    Both exist for the same reason: so that a drafted mention of a player
+    the model was genuinely given is recognized rather than rejected as an
+    invented name, which would silently drop the whole email to the plain
+    deterministic rendering.
+
+    A news item carries a name but no player_id, since it comes from a web
+    search rather than from any roster. Each one is keyed under a
+    synthetic "news:<name>" id, which is enough for the unknown-name pass
+    (it only ever tests whether a name is a key) and which no verdict
+    lookup can collide with, since brief_verdicts and toss_up_player_ids
+    both read real roster ids only.
     """
-    names: dict[str, str] = {}
+    return {name.lower(): player_id for player_id, name in _collect_players(brief)}
+
+
+def brief_player_display_names(brief: dict[str, Any]) -> list[str]:
+    """Return the same players brief_player_names finds, as written, deduped.
+
+    Same sections, same rules, but the name's own spelling and letter case
+    are kept and the result is a list in first-seen order rather than a
+    lookup keyed on a lowercased name. The gate itself wants the lowercase
+    keys, since it matches names out of free prose; anything that shows a
+    name to a person or to a model wants the real one, which is what
+    engine.weekly_run passes to engine.sources.news.fetch_news.
+    """
+    seen: dict[str, str] = {}
+    for _player_id, name in _collect_players(brief):
+        seen.setdefault(name.lower(), name)
+    return list(seen.values())
+
+
+def _collect_players(brief: dict[str, Any]) -> list[tuple[str, str]]:
+    """Return (player_id, name) for every player brief names, in read order.
+
+    The single place that knows which sections of a brief carry a player
+    name; brief_player_names and brief_player_display_names both read it,
+    so neither can drift from the other. Duplicates are left in: each
+    caller decides how to collapse them.
+    """
+    found: list[tuple[str, str]] = []
 
     def _add(player_id: Any, name: Any) -> None:
         if player_id is None or name is None:
             return
-        names[str(name).lower()] = player_id
+        found.append((player_id, str(name)))
 
     for lineup_key in ("optimal_lineup", "current_lineup"):
         lineup = brief.get(lineup_key) or {}
@@ -217,7 +260,15 @@ def brief_player_names(brief: dict[str, Any]) -> dict[str, str]:
         _add(send.get("player_id"), send.get("name"))
         _add(receive.get("player_id"), receive.get("name"))
 
-    return names
+    news = brief.get("news") or {}
+    for item in (news.get("data") or {}).get("items") or []:
+        if not isinstance(item, dict):
+            continue
+        player = item.get("player")
+        if isinstance(player, str) and player.strip():
+            _add(f"news:{player.strip()}", player.strip())
+
+    return found
 
 
 def brief_verdicts(brief: dict[str, Any]) -> dict[str, str]:

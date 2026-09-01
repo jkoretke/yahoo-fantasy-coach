@@ -3,8 +3,8 @@ Description=Email alert when a Yahoo Fantasy Coach unit fails at the systemd lev
 # Reached from every routine unit below via OnFailure=fantasy-failure-alert@%n.service,
 # so %i here is the name of the unit that failed. This fires ONLY when the wrapper
 # itself could not report: it was killed at TimeoutStartSec, or an ExecStartPre failed.
-# The wrappers always exit 0 on their own errors and send (or skip) their own email,
-# so this never duplicates a normal run outcome.
+# It also fires when a wrapper reports its own failure, since a "failed" STATUS line
+# now exits 1. A successful or legitimately skipped run exits 0 and never reaches here.
 # Note: engine.notify's CLI always exits 0, so this alert unit reports success even
 # when it could not actually send the email. journalctl -u fantasy-failure-alert@<unit>
 # is the only durable record that it ran and what it printed.

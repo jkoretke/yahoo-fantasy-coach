@@ -2,9 +2,10 @@
 
 Every wrapper follows the same shape, proven in moonsail-social/engine/blog_run.py: build a
 brief, ask Claude to write the prose from it, check the prose against the brief, send exactly
-one email, always exit 0. The wrapper's underlying work ends with a machine readable
-`STATUS <token>` line as its last output; STATUS_PREFIX / find_status_line / strip_status_line /
-status_line / print_status are the shared contract for producing and consuming that line.
+one email, then exit on a code that matches what it just reported. The wrapper's underlying
+work ends with a machine readable `STATUS <token>` line as its last output; STATUS_PREFIX /
+find_status_line / strip_status_line / status_line / print_status / exit_code are the shared
+contract for producing and consuming that line.
 
 run_claude is the ONLY place in this repo that spawns a subprocess for `claude --print`. It is
 kept narrow and separately mockable, exactly like engine.notify's own `_run_curl`, so no test in
@@ -24,9 +25,20 @@ engine.brief.build_brief already assembled at the module default, without engine
 engine.lineup or engine.waivers needing to change. See its own docstring for the faab/priority
 branch this depends on.
 
-Public names: STATUS_PREFIX, PROMPTS_DIR, PROSE_MODES, prompt_path, load_prompt,
-find_status_line, strip_status_line, status_line, print_status, error_status_token, run_claude,
-draft_body, apply_toss_up_margin, compose_email, deliver.
+resolve_week holds the whole "which week is this live run for" policy, in one place rather
+than repeated in four wrappers: an explicit --week always wins, otherwise ESPN's own current
+week is read through engine.sources.schedule.fetch_current_week, and anything that cannot be
+resolved confidently raises EngineError rather than guessing. A fixtures run never calls it.
+
+exit_code turns a wrapper's STATUS outcome into that wrapper's process exit code. Only
+"failed" is non-zero. "skipped" is a success: gameday_run reports it on every day with no
+game, and inactive_run on nearly every five-minute fire, so treating it as a failure would
+mean an alert every five minutes on a quiet Sunday.
+
+Public names: STATUS_PREFIX, PROMPTS_DIR, PROSE_MODES, FAILED_OUTCOME, prompt_path,
+load_prompt, find_status_line, strip_status_line, status_line, print_status, exit_code,
+error_status_token, run_claude, draft_body, apply_toss_up_margin, resolve_week, compose_email,
+deliver.
 """
 from __future__ import annotations
 
@@ -44,11 +56,16 @@ from engine.config import claude_config
 from engine.email_render import render_plain_email, subject_for
 from engine.lineup import lineup_changes
 from engine.prose_gate import check_draft, format_violations
+from engine.sources import schedule as schedule_source
 
 # Every STATUS line, in either direction, starts with this. Note the trailing
 # space: status_line builds a line by concatenating this directly onto the
 # outcome and tokens, so callers never need to add their own separator.
 STATUS_PREFIX = "STATUS "
+
+# The one STATUS outcome that means the run did not do its job. Everything
+# else ("emailed", "dry-run", "skipped") is a success; see exit_code.
+FAILED_OUTCOME = "failed"
 
 # Where the four prompt files live: prompts/weekly.md, gameday.md, waiver.md, inactive.md.
 PROMPTS_DIR = REPO_ROOT / "prompts"
@@ -120,14 +137,31 @@ def status_line(outcome: str, *tokens: str) -> str:
     return STATUS_PREFIX + " ".join((outcome, *tokens))
 
 
-def print_status(outcome: str, *tokens: str) -> None:
-    """Print status_line(outcome, *tokens) to stdout.
+def print_status(outcome: str, *tokens: str) -> int:
+    """Print status_line(outcome, *tokens) to stdout, return exit_code(outcome).
 
     Every wrapper calls this exactly once, as its LAST output, so a scheduler
     or a human reading the run's stdout always finds the outcome on the final
-    line.
+    line. The return value is what the wrapper's main() then returns, so the
+    printed outcome and the process's exit code can never disagree.
     """
     print(status_line(outcome, *tokens))
+    return exit_code(outcome)
+
+
+def exit_code(outcome: str) -> int:
+    """Return the process exit code for a STATUS outcome: 1 for failed, else 0.
+
+    Only FAILED_OUTCOME is non-zero. "emailed" and "dry-run" are obvious
+    successes. "skipped" is one too, and deliberately so: gameday_run prints
+    "STATUS skipped no-games" on every day none of the owner's players play,
+    and inactive_run prints "STATUS skipped not-yet" on nearly every one of
+    its five-minute fires. Those are the routines working correctly, so a
+    non-zero exit there would mean systemd's OnFailure= alert firing every
+    five minutes on a quiet Sunday, which is exactly the noise that would
+    get the alert muted and defeat the point of having one.
+    """
+    return 1 if outcome == FAILED_OUTCOME else 0
 
 
 def error_status_token(error: Exception) -> str:
@@ -279,6 +313,90 @@ def apply_toss_up_margin(brief: dict[str, Any], margin: float) -> dict[str, Any]
     return brief
 
 
+def resolve_week(
+    explicit: int | None,
+    config: dict[str, Any],
+    *,
+    cache_root: Path | None = None,
+) -> int:
+    """Return the NFL week a live run is for. Never guesses, never returns 0.
+
+    ONLY FOR A LIVE RUN. A --fixtures run takes its week from the fixture
+    league's own "current_week" and must never reach this function, which
+    talks to the network.
+
+    Resolution order:
+
+    1. explicit (the wrapper's --week) wins whenever it is not None, with
+       no network call at all. This is the escape hatch for a backfill, or
+       for any week ESPN and the owner's league disagree about.
+    2. Otherwise engine.sources.schedule.fetch_current_week is asked. It is
+       reached through the module, not imported by name, so a test can
+       monkeypatch it in place, the same seam engine.live_league uses.
+
+    Everything below raises EngineError rather than returning a number it
+    is not sure of, because every later fetch in the run is keyed on this
+    week: a wrong week here is not a degraded run, it is a confident email
+    about the wrong week's games.
+
+    - The source being unavailable (including a stale cache entry, which
+      fetch_current_week reports as unavailable on purpose) raises.
+    - ESPN's season year disagreeing with config's league.season raises. In
+      January those genuinely differ, and silently taking ESPN's would run
+      against a season the config was never pointed at.
+    - season_type 1 (preseason) resolves to week 1: the fantasy season has
+      not started, and week 1 is the next real week either way.
+    - season_type 2 (regular season) resolves to ESPN's own week number.
+    - season_type 3 (postseason) raises. ESPN restarts week numbering at 1
+      for the wild card round, so taking that number would silently run
+      the regular season's week 1 in January.
+    - Any other season_type, or a week number below 1, raises.
+    """
+    if explicit is not None:
+        return explicit
+
+    result = schedule_source.fetch_current_week(cache_root=cache_root)
+    if not result["available"]:
+        raise EngineError(
+            "could not resolve the current NFL week from ESPN "
+            f"({result['reason']}); pass --week NN explicitly"
+        )
+
+    data = result["data"]
+    season = data["season"]
+    season_type = data["season_type"]
+    week = data["week"]
+
+    configured_season = config["league"]["season"]
+    if int(season) != int(configured_season):
+        raise EngineError(
+            f"ESPN reports season {season} but config's league.season is "
+            f"{configured_season}; pass --week NN explicitly, or point the "
+            "config at the season you mean"
+        )
+
+    if season_type == schedule_source.PRESEASON_TYPE:
+        return 1
+    if season_type == schedule_source.POSTSEASON_TYPE:
+        raise EngineError(
+            "ESPN reports the postseason (season_type 3), where week numbering "
+            "restarts at 1 and does not mean the same thing; pass --week NN "
+            "explicitly if this league is still running"
+        )
+    if season_type != schedule_source.REGULAR_SEASON_TYPE:
+        raise EngineError(
+            f"ESPN reports an unrecognized season_type {season_type!r}; "
+            "pass --week NN explicitly"
+        )
+
+    if week < 1:
+        raise EngineError(
+            f"ESPN reports week {week!r}, which is not a usable week number; "
+            "pass --week NN explicitly"
+        )
+    return week
+
+
 def compose_email(
     routine: str,
     brief: dict[str, Any],
@@ -286,6 +404,7 @@ def compose_email(
     *,
     trades: dict[str, Any] | None = None,
     inactive_changes: list[dict[str, Any]] | None = None,
+    news: dict[str, Any] | None = None,
     prose: str = "auto",
     fixtures: bool = False,
     runner: _RunnerFn | None = None,
@@ -305,20 +424,26 @@ def compose_email(
     body directly from brief (plus trades / inactive_changes); run_claude is
     never called, so a --fixtures run never spawns a subprocess.
 
-    On the claude path, draft_body drafts a body from brief PLUS trades and
-    inactive_changes (each rendered as its own labelled fenced JSON block
-    appended after the brief, via draft_body's extra_context parameter, only
-    when the corresponding argument here is not None) so weekly's trade
-    ideas and inactive's change list actually reach the model instead of
-    being silently dropped. engine.prose_gate.check_draft then validates
-    the draft against this SAME brief, widened with a "trades" key when
-    trades is not None (see engine.prose_gate.brief_player_names, which
-    reads it) so a trade partner's player, named nowhere else in brief,
-    does not trip an unknown-player violation just for having been offered
-    in a trade idea. A rejection, or draft_body returning no body at all,
-    is logged to stderr (the gate's own violations when there were any to
-    check, the draft failure reason otherwise) and falls back to
-    render_plain_email, because the plan says the email always goes out.
+    On the claude path, draft_body drafts a body from brief PLUS trades,
+    inactive_changes and news (each rendered as its own labelled fenced
+    JSON block appended after the brief, via draft_body's extra_context
+    parameter, only when the corresponding argument here is not None) so
+    weekly's trade ideas, inactive's change list and the news pass's items
+    actually reach the model instead of being silently dropped.
+    engine.prose_gate.check_draft then validates the draft against this
+    SAME brief, widened with a "trades" key when trades is not None and a
+    "news" key when news is not None (see
+    engine.prose_gate.brief_player_names, which reads both) so a player
+    named nowhere else in brief, a trade partner's or one a news item is
+    about, does not trip an unknown-player violation just for having been
+    handed to the model. Getting that widening wrong fails silently and
+    permanently: the gate rejects, the email still goes out, and every
+    weekly email is quietly plain forever with nothing reporting it.
+
+    A rejection, or draft_body returning no body at all, is logged to
+    stderr (the gate's own violations when there were any to check, the
+    draft failure reason otherwise) and falls back to render_plain_email,
+    because the plan says the email always goes out.
 
     source is "claude" or "plain": which path actually produced body.
     """
@@ -333,27 +458,36 @@ def compose_email(
 
     def _plain_body() -> str:
         _, rendered = render_plain_email(
-            routine, brief, trades=trades, inactive_changes=inactive_changes, config=config
+            routine,
+            brief,
+            trades=trades,
+            inactive_changes=inactive_changes,
+            news=news,
+            config=config,
         )
         return rendered
 
     if resolved == "plain":
         return subject, _plain_body(), "plain"
 
-    extra_context = _build_extra_context(trades, inactive_changes)
+    extra_context = _build_extra_context(trades, inactive_changes, news)
     body, reason = draft_body(routine, brief, config, extra_context=extra_context, runner=runner)
     if body is None:
         print(f"run_common: no claude draft used ({reason})", file=sys.stderr)
     else:
         brief_for_check = brief
-        if trades is not None:
-            # trades names players on other teams' rosters, which brief
-            # itself never carries (brief only names the owner's own team
-            # and this week's opponent); brief_player_names reads a
-            # "trades" key exactly this shape when present, so a widened
-            # copy is passed here without mutating the caller's brief.
+        if trades is not None or news is not None:
+            # Both name players brief itself never carries: trades reaches
+            # across every other team's roster, and a news item may be
+            # about a backup nobody rosters yet. brief_player_names reads
+            # a "trades" and a "news" key of exactly these shapes when
+            # present, so a widened copy is passed here without mutating
+            # the caller's brief.
             brief_for_check = dict(brief)
-            brief_for_check["trades"] = trades
+            if trades is not None:
+                brief_for_check["trades"] = trades
+            if news is not None:
+                brief_for_check["news"] = news
         result = check_draft(body, brief_for_check)
         if result["ok"]:
             return subject, body, "claude"
@@ -363,13 +497,15 @@ def compose_email(
 
 
 def _build_extra_context(
-    trades: dict[str, Any] | None, inactive_changes: list[dict[str, Any]] | None
+    trades: dict[str, Any] | None,
+    inactive_changes: list[dict[str, Any]] | None,
+    news: dict[str, Any] | None = None,
 ) -> str:
-    """Return draft_body's extra_context string for trades and inactive_changes.
+    """Return draft_body's extra_context for trades, inactive_changes and news.
 
     Each argument that is not None becomes its own labelled fenced JSON
-    block; both, either, or neither may be present. Returns "" when both
-    are None, which draft_body already treats as "nothing to append".
+    block; any, all, or none may be present. Returns "" when they are all
+    None, which draft_body already treats as "nothing to append".
     """
     parts: list[str] = []
     if trades is not None:
@@ -378,6 +514,8 @@ def _build_extra_context(
         parts.append(
             "INACTIVE CHANGES:\n```json\n" + json.dumps(inactive_changes, indent=2) + "\n```"
         )
+    if news is not None:
+        parts.append("NEWS:\n```json\n" + json.dumps(news, indent=2) + "\n```")
     return "\n\n".join(parts)
 
 

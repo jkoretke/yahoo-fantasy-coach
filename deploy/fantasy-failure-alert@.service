@@ -1,0 +1,21 @@
+[Unit]
+Description=Email alert when a Yahoo Fantasy Coach unit fails at the systemd level
+# Reached from every routine unit below via OnFailure=fantasy-failure-alert@%n.service,
+# so %i here is the name of the unit that failed. This fires ONLY when the wrapper
+# itself could not report: it was killed at TimeoutStartSec, or an ExecStartPre failed.
+# The wrappers always exit 0 on their own errors and send (or skip) their own email,
+# so this never duplicates a normal run outcome.
+# Note: engine.notify's CLI always exits 0, so this alert unit reports success even
+# when it could not actually send the email. journalctl -u fantasy-failure-alert@<unit>
+# is the only durable record that it ran and what it printed.
+
+[Service]
+Type=oneshot
+User=jeff
+WorkingDirectory=/home/jeff/Projects/yahoo-fantasy-coach
+Environment=HOME=/home/jeff
+Environment=PATH=/home/jeff/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/jeff/Projects/yahoo-fantasy-coach/.venv/bin/python3 -m engine.notify --subject "[fantasy-coach] FAILED: systemd could not run %i" --body "%i entered a failed state, so no routine email was sent. Check: journalctl -u %i -n 100"
+NoNewPrivileges=true
+StandardOutput=journal
+StandardError=journal

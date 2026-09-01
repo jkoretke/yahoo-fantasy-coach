@@ -1,0 +1,14 @@
+[Unit]
+Description=Poll for inactives every 5 minutes; the runner decides whether the window is open
+
+[Timer]
+OnCalendar=*:0/5
+# Persistent=false is deliberate here: a catch-up fire for a kickoff window that
+# already started is worse than no fire at all, so a missed tick (box was off) is
+# not replayed.
+Persistent=false
+AccuracySec=30s
+Unit=fantasy-inactive.service
+
+[Install]
+WantedBy=timers.target

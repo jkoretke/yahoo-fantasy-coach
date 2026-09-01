@@ -1,0 +1,13 @@
+[Unit]
+Description=Run the Yahoo Fantasy Coach waiver routine (Tuesday evening, before waivers process)
+
+[Timer]
+# OnCalendar times are the box's own local time (systemd default), not UTC. This
+# fire is scheduled ahead of the league's own waiver processing time, which is
+# config/league.yaml waiver.day and waiver.time (default Tuesday 23:00).
+OnCalendar=Tue *-*-* 20:00:00
+Persistent=true
+Unit=fantasy-waiver.service
+
+[Install]
+WantedBy=timers.target

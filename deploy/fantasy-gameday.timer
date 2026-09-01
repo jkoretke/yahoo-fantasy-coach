@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the Yahoo Fantasy Coach game day routine every morning
+
+[Timer]
+OnCalendar=*-*-* 08:00:00
+Persistent=true
+Unit=fantasy-gameday.service
+
+[Install]
+WantedBy=timers.target

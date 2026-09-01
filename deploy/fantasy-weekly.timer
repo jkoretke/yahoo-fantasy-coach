@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the Yahoo Fantasy Coach weekly routine (Wednesday evening)
+
+[Timer]
+# OnCalendar times are the box's own local time (systemd default), not UTC.
+OnCalendar=Wed *-*-* 20:00:00
+Persistent=true
+Unit=fantasy-weekly.service
+
+[Install]
+WantedBy=timers.target

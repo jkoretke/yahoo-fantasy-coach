@@ -1,0 +1,47 @@
+[Unit]
+Description=Yahoo Fantasy Coach inactive check (75 minutes before a kickoff window)
+After=network-online.target
+Wants=network-online.target
+# Outer net: fires only if this wrapper is itself killed (TimeoutStartSec) or
+# ExecStartPre fails, before it can report its own outcome.
+OnFailure=fantasy-failure-alert@%n.service
+
+[Service]
+Type=oneshot
+User=jeff
+WorkingDirectory=/home/jeff/Projects/yahoo-fantasy-coach
+Environment=HOME=/home/jeff
+Environment=PATH=/home/jeff/.local/bin:/usr/local/bin:/usr/bin:/bin
+# Pull the latest code before every run. This needs a git remote already
+# configured in the box checkout; if there is none, or the pull conflicts, the
+# ExecStartPre fails and the OnFailure alert above is what tells you. Note that
+# config/league.yaml is gitignored and is NEVER delivered by this pull: create it
+# by hand on the box, next to ~/.config/yahoo-fantasy-coach/secrets.env. See
+# docs/setup.md.
+ExecStartPre=/usr/bin/git pull --rebase
+# KNOWN GAP, read before enabling this unit. Every wrapper returns 0 from main()
+# on EVERY failure path, so systemd sees success and the OnFailure= line above does
+# NOT fire. Two failures look exactly like a good run:
+#   1. A live (non-fixtures) run currently requires an explicit --week NN. Nothing
+#      in the engine resolves the current NFL week yet. Without it the wrapper
+#      raises EngineError, catches it, prints "STATUS failed <routine> engine-error"
+#      and exits 0.
+#   2. An email that could not be sent prints "STATUS failed <routine>
+#      email-send-failed" and also exits 0.
+# The STATUS line in journalctl -u <unit> is the only record of either. Do not enable
+# this timer for live use until a current-week resolver exists (or until this
+# ExecStart carries --week), and check the journal rather than the unit state.
+# Also confirm that the `claude` binary resolves under the Environment=PATH above:
+# engine.run_common.run_claude spawns a bare `claude` and does NOT catch
+# FileNotFoundError, so a live run with prose enabled crashes this unit if claude is
+# not on that PATH. Set claude.binary to an absolute path in config/league.yaml if
+# it lives elsewhere. Yahoo Fantasy Sports API access is also still pending approval,
+# so no live run can succeed yet regardless. See docs/setup.md.
+ExecStart=/home/jeff/Projects/yahoo-fantasy-coach/.venv/bin/python3 -m engine.inactive_run --timeout 180
+TimeoutStartSec=300
+NoNewPrivileges=true
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

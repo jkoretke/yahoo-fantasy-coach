@@ -410,3 +410,77 @@ def test_team_abbreviation_aliases_all_map_to_a_canonical_code() -> None:
     for alias, canonical in base.TEAM_ABBREVIATION_ALIASES.items():
         assert canonical in _CANONICAL_TEAMS, f"{alias} maps to non-canonical {canonical!r}"
         assert alias not in _CANONICAL_TEAMS, f"{alias} is itself canonical, should not be aliased"
+
+
+# ---------------------------------------------------------------------------
+# prune_cache
+# ---------------------------------------------------------------------------
+
+
+def _write_entry(cache_root: Path, key: str, fetched_at: str) -> Path:
+    base.write_cache(key, "https://example.invalid", {"x": 1},
+                     cache_root=cache_root, fetched_at=fetched_at)
+    return base.cache_path(key, cache_root)
+
+
+def _iso(days_ago: float) -> str:
+    when = datetime.now(timezone.utc) - timedelta(days=days_ago)
+    return when.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def test_prune_cache_deletes_old_entries_and_keeps_fresh_ones(tmp_path: Path) -> None:
+    fresh = _write_entry(tmp_path, "fresh-one", _iso(1))
+    old = _write_entry(tmp_path, "old-one", _iso(30))
+
+    removed = base.prune_cache(tmp_path)
+
+    assert removed == 1
+    assert fresh.exists()
+    assert not old.exists()
+
+
+def test_prune_cache_default_max_age_outlasts_every_source(tmp_path: Path) -> None:
+    # Deleting an entry must never change a run's outcome, so the prune age
+    # has to be longer than the longest any source would serve one stale.
+    assert base.CACHE_PRUNE_MAX_AGE_SECONDS > base.DEFAULT_MAX_AGE_SECONDS
+    entry = _write_entry(tmp_path, "six-days", _iso(6))
+    assert base.prune_cache(tmp_path) == 0
+    assert entry.exists()
+
+
+def test_prune_cache_deletes_unreadable_entries(tmp_path: Path) -> None:
+    # A corrupt file is already a permanent cache miss to read_cache, so
+    # keeping it only costs disk.
+    corrupt = tmp_path / "corrupt.json"
+    corrupt.write_text("{not json", encoding="utf-8")
+    not_an_object = tmp_path / "list.json"
+    not_an_object.write_text("[1, 2, 3]", encoding="utf-8")
+
+    assert base.prune_cache(tmp_path) == 2
+    assert not corrupt.exists()
+    assert not not_an_object.exists()
+
+
+def test_prune_cache_ignores_anything_that_is_not_a_json_file(tmp_path: Path) -> None:
+    keep = tmp_path / "notes.txt"
+    keep.write_text("not a cache entry", encoding="utf-8")
+    subdir = tmp_path / "nested.json"
+    subdir.mkdir()
+
+    assert base.prune_cache(tmp_path) == 0
+    assert keep.exists()
+    assert subdir.is_dir()
+
+
+def test_prune_cache_missing_directory_is_nothing_to_do(tmp_path: Path) -> None:
+    assert base.prune_cache(tmp_path / "never-created") == 0
+
+
+def test_prune_cache_never_raises_on_an_undeletable_file(tmp_path: Path, monkeypatch) -> None:
+    _write_entry(tmp_path, "old-one", _iso(30))
+
+    def _refuse(self) -> None:
+        raise OSError("read-only file system")
+
+    monkeypatch.setattr(Path, "unlink", _refuse)
+    assert base.prune_cache(tmp_path) == 0

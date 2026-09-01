@@ -12,7 +12,14 @@ from pathlib import Path
 
 from engine.brief import build_brief
 from engine.fixtures import load_fixture_league
-from engine.prose_gate import check_draft, format_violations
+from engine.prose_gate import (
+    brief_player_display_names,
+    brief_player_names,
+    brief_verdicts,
+    check_draft,
+    format_violations,
+    toss_up_player_ids,
+)
 
 _FIXTURE_DIR = Path(__file__).resolve().parent.parent / "fixtures" / "phase4"
 
@@ -187,3 +194,78 @@ def test_format_violations_is_one_line_per_violation():
     lines = text.splitlines()
     assert len(lines) == len(result["violations"])
     assert all(line for line in lines)
+
+
+# ---------------------------------------------------------------------------
+# The news widening
+# ---------------------------------------------------------------------------
+
+
+def _news_envelope(*players: str) -> dict:
+    return {
+        "source": "news", "available": True, "stale": False, "reason": None,
+        "fetched_at": "2026-09-23T12:00:00Z",
+        "data": {
+            "players": list(players),
+            "items": [
+                {"player": name, "note": "took first team reps", "source": "espn.com"}
+                for name in players
+            ],
+            "count": len(players),
+        },
+    }
+
+
+def test_a_news_only_player_is_a_known_name():
+    weekly_brief = _weekly_brief()
+    # THE SILENT FAILURE THIS GUARDS. A news item may name a player the
+    # brief never does: the backup expected to start in an injured
+    # starter's place. If brief_player_names did not read the news key,
+    # every draft that repeated that name would be rejected, compose_email
+    # would fall back to the plain rendering, the email would still go out,
+    # and every weekly email would be quietly plain forever with nothing
+    # reporting it.
+    unknown = "Rowan Hallbrook"
+    assert unknown.lower() not in brief_player_names(weekly_brief)
+
+    widened = dict(weekly_brief)
+    widened["news"] = _news_envelope(unknown)
+
+    assert unknown.lower() in brief_player_names(widened)
+
+    draft = f"{unknown} took first team reps this week, worth watching."
+    assert check_draft(draft, widened)["ok"] is True
+    assert check_draft(draft, weekly_brief)["ok"] is False
+
+
+def test_news_names_do_not_reach_the_verdict_passes():
+    weekly_brief = _weekly_brief()
+    # A news player is keyed under a synthetic "news:<name>" id. Nothing
+    # about that may look like a roster verdict, or a news mention could
+    # start or bench somebody the brief never ruled on.
+    widened = dict(weekly_brief)
+    widened["news"] = _news_envelope("Rowan Hallbrook")
+
+    assert brief_player_names(widened)["rowan hallbrook"] == "news:Rowan Hallbrook"
+    assert "news:Rowan Hallbrook" not in brief_verdicts(widened)
+    assert "news:Rowan Hallbrook" not in toss_up_player_ids(widened)
+
+
+def test_a_malformed_news_section_contributes_no_names():
+    weekly_brief = _weekly_brief()
+    for broken in ({}, {"data": None}, {"data": {"items": None}},
+                   {"data": {"items": [{"note": "no name"}, {"player": "  "}, "junk"]}}):
+        widened = dict(weekly_brief)
+        widened["news"] = broken
+        assert brief_player_names(widened) == brief_player_names(weekly_brief)
+
+
+def test_display_names_keep_their_own_spelling():
+    weekly_brief = _weekly_brief()
+    lowered = brief_player_names(weekly_brief)
+    displayed = brief_player_display_names(weekly_brief)
+
+    # Same players, one keyed for matching prose, one spelled as written.
+    assert sorted(name.lower() for name in displayed) == sorted(lowered)
+    assert any(name != name.lower() for name in displayed)
+    assert len(displayed) == len(set(name.lower() for name in displayed))

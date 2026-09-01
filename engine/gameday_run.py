@@ -61,6 +61,7 @@ from engine.common import EngineError
 from engine.config import SOURCE_NAMES, load_league_config, source_enabled, toss_up_margin
 from engine.fixtures import load_fixture_league, owner_team_id
 from engine.live_league import build_live_league
+from engine.sources.base import prune_cache
 from engine.sources.schedule import fetch_week_schedule
 from engine.timing import games_on_date, load_fixture_schedule, starter_nfl_teams
 
@@ -200,6 +201,12 @@ def main(argv: list[str] | None = None) -> int:
             config["claude"]["binary"] = args.claude_bin
         if args.timeout is not None:
             config["claude"]["timeout_seconds"] = args.timeout
+
+        if not args.fixtures:
+            # Housekeeping, once per live run: runs/cache/ otherwise grows
+            # without bound on a long lived box deploy. Never raises, and a
+            # --fixtures run reads no cache at all, so it prunes nothing.
+            prune_cache()
 
         if args.fixtures:
             fixture_dir = Path(args.fixture_dir) if args.fixture_dir else None

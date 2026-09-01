@@ -172,3 +172,10 @@ see `LICENSE`.
 Fantasy data provided by Yahoo Fantasy
 
 Additional data comes from Sleeper, ESPN's public endpoints, and Open-Meteo.
+
+The weekly routine also runs a news pass: Claude searches the web for late breaking
+news about the players your brief already names, and reports only what it read.
+Python still computes every number and every verdict; the news is context, not a
+decision. It is the one data source that costs anything to run, so only the weekly
+routine asks it, once per run, and never on a `--fixtures` run. Turn it off with
+`sources.news: false` in `config/league.yaml`.

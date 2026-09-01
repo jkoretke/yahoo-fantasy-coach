@@ -404,6 +404,7 @@ def compose_email(
     *,
     trades: dict[str, Any] | None = None,
     inactive_changes: list[dict[str, Any]] | None = None,
+    news: dict[str, Any] | None = None,
     prose: str = "auto",
     fixtures: bool = False,
     runner: _RunnerFn | None = None,
@@ -423,20 +424,26 @@ def compose_email(
     body directly from brief (plus trades / inactive_changes); run_claude is
     never called, so a --fixtures run never spawns a subprocess.
 
-    On the claude path, draft_body drafts a body from brief PLUS trades and
-    inactive_changes (each rendered as its own labelled fenced JSON block
-    appended after the brief, via draft_body's extra_context parameter, only
-    when the corresponding argument here is not None) so weekly's trade
-    ideas and inactive's change list actually reach the model instead of
-    being silently dropped. engine.prose_gate.check_draft then validates
-    the draft against this SAME brief, widened with a "trades" key when
-    trades is not None (see engine.prose_gate.brief_player_names, which
-    reads it) so a trade partner's player, named nowhere else in brief,
-    does not trip an unknown-player violation just for having been offered
-    in a trade idea. A rejection, or draft_body returning no body at all,
-    is logged to stderr (the gate's own violations when there were any to
-    check, the draft failure reason otherwise) and falls back to
-    render_plain_email, because the plan says the email always goes out.
+    On the claude path, draft_body drafts a body from brief PLUS trades,
+    inactive_changes and news (each rendered as its own labelled fenced
+    JSON block appended after the brief, via draft_body's extra_context
+    parameter, only when the corresponding argument here is not None) so
+    weekly's trade ideas, inactive's change list and the news pass's items
+    actually reach the model instead of being silently dropped.
+    engine.prose_gate.check_draft then validates the draft against this
+    SAME brief, widened with a "trades" key when trades is not None and a
+    "news" key when news is not None (see
+    engine.prose_gate.brief_player_names, which reads both) so a player
+    named nowhere else in brief, a trade partner's or one a news item is
+    about, does not trip an unknown-player violation just for having been
+    handed to the model. Getting that widening wrong fails silently and
+    permanently: the gate rejects, the email still goes out, and every
+    weekly email is quietly plain forever with nothing reporting it.
+
+    A rejection, or draft_body returning no body at all, is logged to
+    stderr (the gate's own violations when there were any to check, the
+    draft failure reason otherwise) and falls back to render_plain_email,
+    because the plan says the email always goes out.
 
     source is "claude" or "plain": which path actually produced body.
     """
@@ -451,27 +458,36 @@ def compose_email(
 
     def _plain_body() -> str:
         _, rendered = render_plain_email(
-            routine, brief, trades=trades, inactive_changes=inactive_changes, config=config
+            routine,
+            brief,
+            trades=trades,
+            inactive_changes=inactive_changes,
+            news=news,
+            config=config,
         )
         return rendered
 
     if resolved == "plain":
         return subject, _plain_body(), "plain"
 
-    extra_context = _build_extra_context(trades, inactive_changes)
+    extra_context = _build_extra_context(trades, inactive_changes, news)
     body, reason = draft_body(routine, brief, config, extra_context=extra_context, runner=runner)
     if body is None:
         print(f"run_common: no claude draft used ({reason})", file=sys.stderr)
     else:
         brief_for_check = brief
-        if trades is not None:
-            # trades names players on other teams' rosters, which brief
-            # itself never carries (brief only names the owner's own team
-            # and this week's opponent); brief_player_names reads a
-            # "trades" key exactly this shape when present, so a widened
-            # copy is passed here without mutating the caller's brief.
+        if trades is not None or news is not None:
+            # Both name players brief itself never carries: trades reaches
+            # across every other team's roster, and a news item may be
+            # about a backup nobody rosters yet. brief_player_names reads
+            # a "trades" and a "news" key of exactly these shapes when
+            # present, so a widened copy is passed here without mutating
+            # the caller's brief.
             brief_for_check = dict(brief)
-            brief_for_check["trades"] = trades
+            if trades is not None:
+                brief_for_check["trades"] = trades
+            if news is not None:
+                brief_for_check["news"] = news
         result = check_draft(body, brief_for_check)
         if result["ok"]:
             return subject, body, "claude"
@@ -481,13 +497,15 @@ def compose_email(
 
 
 def _build_extra_context(
-    trades: dict[str, Any] | None, inactive_changes: list[dict[str, Any]] | None
+    trades: dict[str, Any] | None,
+    inactive_changes: list[dict[str, Any]] | None,
+    news: dict[str, Any] | None = None,
 ) -> str:
-    """Return draft_body's extra_context string for trades and inactive_changes.
+    """Return draft_body's extra_context for trades, inactive_changes and news.
 
     Each argument that is not None becomes its own labelled fenced JSON
-    block; both, either, or neither may be present. Returns "" when both
-    are None, which draft_body already treats as "nothing to append".
+    block; any, all, or none may be present. Returns "" when they are all
+    None, which draft_body already treats as "nothing to append".
     """
     parts: list[str] = []
     if trades is not None:
@@ -496,6 +514,8 @@ def _build_extra_context(
         parts.append(
             "INACTIVE CHANGES:\n```json\n" + json.dumps(inactive_changes, indent=2) + "\n```"
         )
+    if news is not None:
+        parts.append("NEWS:\n```json\n" + json.dumps(news, indent=2) + "\n```")
     return "\n\n".join(parts)
 
 

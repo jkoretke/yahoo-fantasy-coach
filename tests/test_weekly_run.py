@@ -155,6 +155,19 @@ def test_live_run_without_week_resolves_it_and_passes_it_downstream(
 
     monkeypatch.setattr(weekly_run, "build_live_league", _build_live)
 
+    # A live run does run the news pass, which is the one thing in this
+    # wrapper that spawns claude outside the prose step. Patch the source,
+    # not the runner, so this test proves the wiring without a subprocess.
+    monkeypatch.setattr(
+        weekly_run.news_source,
+        "fetch_news",
+        lambda *args, **kwargs: {
+            "source": "news", "available": True, "stale": False, "reason": None,
+            "fetched_at": "2026-09-23T12:00:00Z",
+            "data": {"players": [], "items": [], "count": 0},
+        },
+    )
+
     real_build_brief = engine.brief.build_brief
 
     def _build_brief(league, team_id, week, routine):

@@ -75,6 +75,15 @@ sources:
   injuries: true
   # Game-day weather (engine.sources.weather). Default: true.
   weather: true
+  # Late breaking player news (engine.sources.news). Default: true.
+  #
+  # This is the only source that costs anything to run. The other four read
+  # free public APIs; this one spawns a `claude` subprocess that searches the
+  # web, so it uses your Claude usage. It is on by default because only the
+  # weekly routine asks it, once per run, and that routine already spawns
+  # claude to write the email prose, so it is one extra call a week. Set it
+  # to false to drop the weekly email's news section entirely.
+  news: true
 
 # Point margin below which two lineup or waiver options are treated as a
 # toss-up rather than a confident recommendation. Shared by start/sit,

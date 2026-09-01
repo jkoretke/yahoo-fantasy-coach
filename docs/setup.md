@@ -63,9 +63,12 @@ legal: include only the keys you want to change. The keys that matter most:
   and from.
 - `email.curlrc`: path to the curl config file holding SMTP credentials, only read
   when `email.backend` is `smtp`.
-- `sources.sleeper`, `sources.schedule`, `sources.injuries`, `sources.weather`:
-  toggles for each optional data source. Turning one off falls back to Yahoo-only
-  data for that signal instead of failing the run.
+- `sources.sleeper`, `sources.schedule`, `sources.injuries`, `sources.weather`,
+  `sources.news`: toggles for each optional data source. Turning one off falls back
+  to Yahoo-only data for that signal instead of failing the run. `sources.news` is
+  the only one that costs anything to run: it spawns a `claude` subprocess that
+  searches the web for late breaking player news, asked once per weekly run and by
+  no other routine. Set it to `false` to drop the weekly email's news section.
 - `toss_up_margin_points`: the point margin below which two lineup or waiver options
   are treated as a toss-up rather than a confident recommendation.
 - `claude.binary` and `claude.timeout_seconds`: the `claude` CLI binary to invoke for
@@ -232,5 +235,7 @@ configured.
   interactive OAuth browser sign-in cannot happen until that clears. Everything
   offline, that is every command that passes `--fixtures`, works today regardless
   of that approval.
-- `runs/cache/` has no eviction policy and no size cap, so it grows without bound
-  on a long-lived box deploy. Prune it by hand periodically for now.
+- `runs/cache/` prunes itself: every live run deletes entries older than seven days
+  before it starts. That is far longer than any source would serve an entry, fresh
+  or stale, so a prune can never change a run's outcome. A `--fixtures` run reads no
+  cache and prunes nothing.

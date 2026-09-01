@@ -160,7 +160,9 @@ def test_weekly_render_with_trades_none(weekly_brief):
     assert subject == "[Fantasy] Week 3 plan: Sample Squad One"
     assert "no trade ideas this week" in body.lower()
     assert f"{weekly_brief['points_left_on_bench']:.2f}" in body
-    assert "not built yet" in body.lower()
+    # news=None is not the same as "no news": the section still appears and
+    # says the pass was not run, rather than being silently omitted.
+    assert "news pass not run" in body.lower()
     _assert_no_em_dash(subject, body)
 
 

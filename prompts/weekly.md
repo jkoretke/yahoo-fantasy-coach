@@ -25,6 +25,12 @@ Write the week's plan, covering:
 2. This week's matchup projection: the two projected totals, and where the matchup is won or
    lost, slot by slot.
 3. The trade ideas from the brief's trades section, if there are any worth mentioning.
+4. Anything in the NEWS block that the numbers do not already show. Report only what the block
+   says, in your own plain words. Never turn a news item into a start/sit verdict of your own:
+   the brief's verdicts still stand, and the only place news may decide anything is a
+   lineup_changes entry already flagged "toss_up": true. If the NEWS block is absent, is marked
+   unavailable, or has no items, say in one short line that there is nothing new, and never
+   invent something to fill the section.
 
 Keep it short and readable on a phone. Plain sentences, no tables, no markdown headers.
 

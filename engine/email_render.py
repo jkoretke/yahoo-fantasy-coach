@@ -22,8 +22,8 @@ engine.common.round_points; this module only formats that number for
 display (two decimal places), it never rounds a fresh one.
 
 Public names: INACTIVE_CHANGE_KEYS, format_lineup, format_changes,
-format_matchup, format_waivers, format_trades, format_inactive_changes,
-subject_for, render_plain_email.
+format_matchup, format_waivers, format_trades, format_news,
+format_inactive_changes, subject_for, render_plain_email.
 """
 from __future__ import annotations
 
@@ -244,6 +244,46 @@ def format_trades(trades: dict[str, Any] | None) -> str:
     return _section("Trade ideas", lines)
 
 
+def format_news(news: dict[str, Any] | None) -> str:
+    """Render engine.sources.news.fetch_news's result envelope as one section.
+
+    Like format_trades, the section always appears, with a plain line
+    saying which of the four things happened rather than a silently
+    missing section: the pass was not run at all (news is None), it was
+    switched off in config, it could not run this time (and why), or it
+    ran and found nothing. A stale answer says so, since an injury note
+    from yesterday is worth reading but not worth trusting blindly.
+    """
+    if news is None:
+        return _section(
+            "News",
+            ["News pass not run for this routine. Confirm player status yourself before kickoff."],
+        )
+    if not news.get("available"):
+        reason = news.get("reason") or "unavailable"
+        if reason == "disabled":
+            line = "News pass is switched off in config (sources.news)."
+        else:
+            line = f"News pass could not run this time ({reason})."
+        return _section(
+            "News", [line, "Confirm player status yourself before kickoff."]
+        )
+
+    items = (news.get("data") or {}).get("items") or []
+    if not items:
+        return _section("News", ["Nothing new on your players."])
+
+    lines: list[str] = []
+    if news.get("stale"):
+        lines.append(f"From an earlier check ({news.get('fetched_at')}), not this run.")
+    for item in items:
+        lines.append(f"{item['player']}: {item['note']}")
+        source = item.get("source")
+        if source:
+            lines.append(f"  via {source}")
+    return _section("News", lines)
+
+
 def format_inactive_changes(changes: list[dict[str, Any]]) -> str:
     """Render one screen of inactive alerts: the player, what happened,
     and the exact swap made, from a list of INACTIVE_CHANGE_KEYS shaped
@@ -304,6 +344,7 @@ def render_plain_email(
     *,
     trades: dict[str, Any] | None = None,
     inactive_changes: list[dict[str, Any]] | None = None,
+    news: dict[str, Any] | None = None,
     config: dict[str, Any] | None = None,
 ) -> tuple[str, str]:
     """Render a fully deterministic (subject, body) pair for one routine.
@@ -316,9 +357,10 @@ def render_plain_email(
 
     weekly renders the full optimal lineup, every start/sit call and its
     point margin, points_left_on_bench, the matchup projection, the trade
-    ideas section built from trades (a one line notice when trades is
-    None, never an omitted section), and a closing line stating plainly
-    that the news pass is not built yet.
+    ideas section built from trades, and the news section built from news.
+    The last two follow the same rule: the section always appears, with a
+    one line notice when there is nothing to report or the data was not
+    supplied, never an omitted section.
 
     gameday renders the full recommended lineup from
     brief["optimal_lineup"]["assignments"], self contained rather than a
@@ -332,10 +374,6 @@ def render_plain_email(
     """
     if routine == "weekly":
         subject = subject_for("weekly", brief)
-        closing = _wrap_line(
-            "News check: the injury and late breaking news pass is not built "
-            "yet. Confirm player status yourself before kickoff."
-        )
         body = "\n\n".join(
             [
                 f"Week {brief['week']} plan for {brief['team']['name']}",
@@ -344,7 +382,7 @@ def render_plain_email(
                 f"Points left on bench: {_fmt_pts(brief['points_left_on_bench'])} pts",
                 format_matchup(brief["matchup"]),
                 format_trades(trades),
-                closing,
+                format_news(news),
             ]
         )
         return subject, body

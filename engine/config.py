@@ -35,7 +35,7 @@ LEAGUE_CONFIG_PATH = CONFIG_DIR / "league.yaml"
 LEAGUE_EXAMPLE_CONFIG_PATH = CONFIG_DIR / "league.example.yaml"
 
 EMAIL_BACKENDS = ("brevo", "smtp")
-SOURCE_NAMES = ("sleeper", "schedule", "injuries", "weather")
+SOURCE_NAMES = ("sleeper", "schedule", "injuries", "weather", "news")
 
 DEFAULT_LEAGUE_CONFIG: dict[str, Any] = {
     "league": {
@@ -61,6 +61,12 @@ DEFAULT_LEAGUE_CONFIG: dict[str, Any] = {
         "schedule": True,
         "injuries": True,
         "weather": True,
+        # The only source that costs anything to run: it spawns a claude
+        # subprocess rather than reading a free public API. On by default
+        # anyway, because it is asked once a week by engine.weekly_run,
+        # which already spawns claude for the email prose, and because the
+        # weekly plan's fourth section exists to carry its answer.
+        "news": True,
     },
     "toss_up_margin_points": 2.0,
     "claude": {

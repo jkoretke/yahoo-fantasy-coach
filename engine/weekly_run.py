@@ -18,6 +18,16 @@ engine.trades.trade_ideas and folds it into the email, since a week-level
 plan is the natural place to also flag a positional surplus worth trading
 away.
 
+It is also the only one that runs the news pass
+(engine.sources.news.fetch_news), the plan's fourth weekly section:
+"anything the news pass turned up that the numbers do not show". That pass
+is the only source in this repo that costs anything to run, so it is asked
+once, here, for exactly the players the brief already names
+(engine.prose_gate.brief_player_display_names), and never on a --fixtures
+run. Its
+result envelope is handed to compose_email whole, which both shows it in
+the email and widens the prose gate with the players it names.
+
 team_id and week are resolved once, explicitly, right after the league
 dict is built, and that same team_id and week are passed to every
 downstream call (engine.brief.build_brief and engine.trades.trade_ideas
@@ -44,9 +54,14 @@ from engine import brief as brief_module
 from engine import run_common
 from engine import trades as trades_module
 from engine.common import EngineError
-from engine.config import SOURCE_NAMES, load_league_config, source_enabled, toss_up_margin
+from engine.config import (
+    SOURCE_NAMES, claude_config, load_league_config, source_enabled, toss_up_margin,
+)
 from engine.fixtures import load_fixture_league, owner_team_id
 from engine.live_league import build_live_league
+from engine.sources.base import prune_cache
+from engine.prose_gate import brief_player_display_names
+from engine.sources import news as news_source
 
 ROUTINE = "weekly"
 
@@ -171,6 +186,12 @@ def main(argv: list[str] | None = None) -> int:
         if args.timeout is not None:
             config["claude"]["timeout_seconds"] = args.timeout
 
+        if not args.fixtures:
+            # Housekeeping, once per live run: runs/cache/ otherwise grows
+            # without bound on a long lived box deploy. Never raises, and a
+            # --fixtures run reads no cache at all, so it prunes nothing.
+            prune_cache()
+
         if args.fixtures:
             fixture_dir = Path(args.fixture_dir) if args.fixture_dir else None
             league = load_fixture_league(fixture_dir, waiver_type=args.waiver_type)
@@ -197,6 +218,21 @@ def main(argv: list[str] | None = None) -> int:
 
         trade_ideas_result = trades_module.trade_ideas(league, team_id, week)
 
+        # A --fixtures run spawns nothing: the four documented fixtures
+        # commands promise zero network, zero credentials and no
+        # subprocess. news stays None there, and every renderer says
+        # plainly that the pass was not run rather than omitting the
+        # section.
+        news_result = None
+        if not args.fixtures:
+            claude = claude_config(config)
+            news_result = news_source.fetch_news(
+                brief_player_display_names(brief),
+                enabled=source_enabled(config, "news"),
+                claude_bin=claude["binary"],
+                timeout=claude["timeout_seconds"],
+            )
+
         if args.dry_run:
             print(json.dumps(brief, indent=2))
 
@@ -205,6 +241,7 @@ def main(argv: list[str] | None = None) -> int:
             brief,
             config,
             trades=trade_ideas_result,
+            news=news_result,
             prose=args.prose,
             fixtures=args.fixtures,
         )

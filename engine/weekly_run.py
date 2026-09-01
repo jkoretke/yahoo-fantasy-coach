@@ -151,8 +151,11 @@ def main(argv: list[str] | None = None) -> int:
     An engine.common.EngineError raised anywhere in the flow (a bad
     config, an unresolvable week on a live run, a bad routine label, and
     so on) is caught here, reported to stderr as one line, and reported
-    as "STATUS failed weekly <reason>" instead of propagating, so this
-    process always exits 0.
+    as "STATUS failed weekly <token>" instead of propagating, so this
+    process always exits 0. <token> is a short, fixed, kebab-case slug of
+    the error's class name (engine.run_common.error_status_token, e.g.
+    "engine-error"), never the free-text message itself: the full message
+    is still on the stderr line printed immediately before it.
     """
     parser = _build_arg_parser()
     args = parser.parse_args(argv)
@@ -185,7 +188,7 @@ def main(argv: list[str] | None = None) -> int:
                 },
             )
 
-        team_id = args.team or owner_team_id(league)
+        team_id = args.team or config["league"]["team_id"] or owner_team_id(league)
         week = args.week if args.week is not None else league["current_week"]
 
         brief: dict[str, Any] = brief_module.build_brief(league, team_id, week, ROUTINE)
@@ -219,7 +222,7 @@ def main(argv: list[str] | None = None) -> int:
 
     except EngineError as error:
         print(f"engine.weekly_run: {error}", file=sys.stderr)
-        run_common.print_status("failed", ROUTINE, str(error))
+        run_common.print_status("failed", ROUTINE, run_common.error_status_token(error))
 
     return 0
 

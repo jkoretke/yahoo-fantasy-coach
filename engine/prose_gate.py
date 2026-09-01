@@ -28,7 +28,17 @@ time (split on . ! ? or a newline), and only asserts a verdict for a
 sentence that contains a start/bench (or claim/skip) word from exactly
 one of the two opposing word sets. A sentence naming both, or neither,
 asserts nothing about any player named in it, because there is no way to
-tell which word belongs to which player from word presence alone.
+tell which word belongs to which player from word presence alone. The
+one carve-out to that rule is a comparative phrase ("start X over Y",
+"sit X instead of Y"): the single most natural English for a start/sit
+call, and the exact form engine.email_render's own plain-text fallback
+uses, so it is split at the comparative and each side is checked against
+its own verdict rather than the sentence's one trigger word being
+asserted for both players in it. Which side gets which verdict mirrors
+the sentence's own trigger word ("start" puts the started player first,
+"sit"/"bench" puts the benched player first), not a fixed before/after
+assignment, since hardcoding the direction would silently accept a
+"sit X instead of Y" draft that inverts the brief's actual call.
 
 check_draft never raises: a malformed or missing section of brief is
 read defensively throughout, and any draft string, including an empty
@@ -93,19 +103,38 @@ _MONTHS = (
 # brief's assignments and every individual word of the brief's team and
 # manager names, since neither of those varies by brief the way this fixed
 # set does not vary at all.
+#
+# Both case variants of a word actually emitted in text this gate checks
+# are listed separately (exact string match, not case-insensitive): Start
+# and START both appear here because engine.email_render's own start/sit
+# line reads "START <name> over <name>" in full caps, exactly like STATUS
+# already did for the line this gate itself strips.
 ALLOWED_CAPITALIZED_WORDS: frozenset[str] = frozenset(
     _WEEKDAYS
     + _MONTHS
     + (
         "Week",
         "Start",
+        "START",
         "Sit",
         "Bench",
+        "BENCH",
         "Team",
         "League",
         "Waiver",
         "Claim",
         "Skip",
+        "Drop",
+        "Add",
+        "Swap",
+        "Consider",
+        "Trade",
+        "Send",
+        "Receive",
+        "Total",
+        "Projected",
+        "Recommended",
+        "Points",
         "Bye",
         "Out",
         "Questionable",
@@ -136,9 +165,19 @@ def brief_player_names(brief: dict[str, Any]) -> dict[str, str]:
     assignments (an unfilled unit has both player_id and name as None and
     is skipped), lineup_changes (both the start and sit side of each
     entry), waivers.targets (both the target player and the player it
-    would drop), matchup.team and matchup.opponent assignments, and every
-    named side of matchup.slot_edges. Any of these sections may be absent
-    from brief; a missing section simply contributes no names.
+    would drop), matchup.team and matchup.opponent assignments, every
+    named side of matchup.slot_edges, and, when present, trades.ideas
+    (both the send and the receive side of each idea). Any of these
+    sections may be absent from brief; a missing section simply
+    contributes no names.
+
+    trades is not part of engine.brief.build_brief's own shape (a trade
+    partner's roster reaches across every team in the league, which
+    nothing else in brief ever names): engine.run_common.compose_email
+    attaches it under brief["trades"], in engine.trades.trade_ideas's own
+    return shape, only when a caller actually supplied trades data, so
+    that a drafted mention of a trade partner's player is recognized
+    rather than rejected as an unknown name.
     """
     names: dict[str, str] = {}
 
@@ -170,6 +209,13 @@ def brief_player_names(brief: dict[str, Any]) -> dict[str, str]:
     for edge in matchup.get("slot_edges") or []:
         _add(edge.get("team_player_id"), edge.get("team_name"))
         _add(edge.get("opponent_player_id"), edge.get("opponent_name"))
+
+    trades = brief.get("trades") or {}
+    for idea in trades.get("ideas") or []:
+        send = idea.get("send") or {}
+        receive = idea.get("receive") or {}
+        _add(send.get("player_id"), send.get("name"))
+        _add(receive.get("player_id"), receive.get("name"))
 
     return names
 
@@ -334,6 +380,30 @@ def _waiver_sentence_verdict(lower_sentence: str) -> str | None:
     return None
 
 
+# A comparative phrase splitting one start/sit sentence into its two
+# halves, e.g. "START Trace Winslow over Brix Duskin": the most natural
+# English for a start/sit call, and the exact form engine.email_render's
+# own format_changes uses, so the gate must read it correctly rather than
+# reject its own deterministic fallback email.
+_COMPARATIVE_RE = re.compile(r"\b(?:over|instead of|ahead of|rather than)\b", re.IGNORECASE)
+
+
+def _split_on_comparative(sentence: str) -> tuple[str, str] | None:
+    """Split sentence at its first comparative phrase, or return None.
+
+    Returns (before, after) with the comparative phrase itself excluded
+    from both halves, so a player named in each half can be extracted
+    independently. Only the first comparative phrase in the sentence is
+    used; a sentence naming three or more players across two comparatives
+    is not this gate's concern (a generated draft is expected to make one
+    start/sit call per sentence, per the docstring above).
+    """
+    match = _COMPARATIVE_RE.search(sentence)
+    if match is None:
+        return None
+    return sentence[: match.start()], sentence[match.end() :]
+
+
 def check_draft(draft: str, brief: dict[str, Any]) -> dict[str, Any]:
     """Validate draft (a Claude drafted email body) against brief.
 
@@ -356,13 +426,24 @@ def check_draft(draft: str, brief: dict[str, Any]) -> dict[str, Any]:
        exactly one of the two opposing sets asserts that verdict for
        every brief player named in that sentence; a sentence with both or
        neither asserts nothing, since word presence alone cannot say
-       which word belongs to which player. An asserted start/bench
-       verdict that disagrees with brief_verdicts(brief) is a
-       "verdict-conflict" violation, unless that player_id is in
-       toss_up_player_ids(brief). An asserted claim/skip verdict for a
-       waiver target that disagrees with that target's own "verdict" is
-       an "unknown-waiver-verdict" violation, unless that target itself
-       carries "toss_up": true.
+       which word belongs to which player. The one exception is a
+       start/bench sentence containing a comparative phrase ("over",
+       "instead of", "ahead of", "rather than", see
+       _split_on_comparative): "START X over Y" and "SIT X instead of Y"
+       both name two players under one trigger word, so the two halves
+       are checked against opposite verdicts instead of asserting the
+       sentence's single trigger word for both. Which half gets which
+       verdict mirrors the sentence's own trigger word rather than a
+       fixed before/after assignment: a "start"-triggered sentence checks
+       before against "start" and after against "bench" (the played
+       player named first), while a "bench"-triggered sentence checks
+       before against "bench" and after against "start" (the benched
+       player named first). An asserted start/bench verdict that
+       disagrees with brief_verdicts(brief) is a "verdict-conflict"
+       violation, unless that player_id is in toss_up_player_ids(brief).
+       An asserted claim/skip verdict for a waiver target that disagrees
+       with that target's own "verdict" is an "unknown-waiver-verdict"
+       violation, unless that target itself carries "toss_up": true.
 
     Never raises: every brief section is read with .get(...) fallbacks,
     and any draft string, including empty or non-sentence garbage text,
@@ -397,22 +478,49 @@ def check_draft(draft: str, brief: dict[str, Any]) -> dict[str, Any]:
 
         lineup_verdict = _lineup_sentence_verdict(lower_sentence)
         if lineup_verdict is not None:
-            for player_id in sentence_ids:
-                asserted_against = verdicts.get(player_id)
-                if (
-                    asserted_against is not None
-                    and asserted_against != lineup_verdict
-                    and player_id not in toss_ups
-                ):
-                    violations.append(
-                        {
-                            "kind": "verdict-conflict",
-                            "detail": (
-                                f"draft says {lineup_verdict} for {player_id} "
-                                f"but the brief says {asserted_against}"
-                            ),
-                        }
-                    )
+            comparative = _split_on_comparative(sentence)
+            if comparative is not None:
+                # "START Trace Winslow over Brix Duskin": one sentence,
+                # two players, one start word. Asserting lineup_verdict
+                # for every name in the whole sentence would wrongly
+                # accuse the benched side of a start verdict, so each
+                # half of the comparative is checked against its own
+                # side's verdict instead of the sentence's single
+                # trigger word.
+                before_text, after_text = comparative
+                before_ids, _ = _extract_names(before_text, player_names, allowed_words)
+                after_ids, _ = _extract_names(after_text, player_names, allowed_words)
+                # Mirror off the sentence's OWN trigger word rather than
+                # hardcoding before=start/after=bench: "START X over Y"
+                # (lineup_verdict "start") puts the started player first,
+                # but "SIT X instead of Y" (lineup_verdict "bench") puts
+                # the benched player first, and hardcoding the direction
+                # would silently accept a draft that inverts the brief's
+                # actual call in that second form.
+                if lineup_verdict == "start":
+                    sides = ((before_ids, "start"), (after_ids, "bench"))
+                else:
+                    sides = ((before_ids, "bench"), (after_ids, "start"))
+            else:
+                sides = ((sentence_ids, lineup_verdict),)
+
+            for ids, side_verdict in sides:
+                for player_id in ids:
+                    asserted_against = verdicts.get(player_id)
+                    if (
+                        asserted_against is not None
+                        and asserted_against != side_verdict
+                        and player_id not in toss_ups
+                    ):
+                        violations.append(
+                            {
+                                "kind": "verdict-conflict",
+                                "detail": (
+                                    f"draft says {side_verdict} for {player_id} "
+                                    f"but the brief says {asserted_against}"
+                                ),
+                            }
+                        )
 
         waiver_verdict = _waiver_sentence_verdict(lower_sentence)
         if waiver_verdict is not None:

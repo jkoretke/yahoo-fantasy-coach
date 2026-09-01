@@ -23,12 +23,14 @@ from engine.run_common import (
     apply_toss_up_margin,
     compose_email,
     deliver,
+    error_status_token,
     find_status_line,
     load_prompt,
     print_status,
     status_line,
     strip_status_line,
 )
+from engine.trades import trade_ideas
 
 _PROMPT_FILES = {
     "weekly": "prompts/weekly.md",
@@ -265,6 +267,119 @@ def test_compose_email_invalid_prose_mode_raises():
     with pytest.raises(EngineError):
         compose_email("weekly", _weekly_brief(), _config(), prose="not-a-mode")
     assert "not-a-mode" not in PROSE_MODES
+
+
+# ---------------------------------------------------------------------------
+# compose_email: trades and inactive_changes actually reach the claude path
+# ---------------------------------------------------------------------------
+
+
+def test_compose_email_forwards_trade_ideas_to_the_claude_prompt():
+    # Regression guard: compose_email used to build the claude prompt from
+    # brief alone, so weekly's trade ideas never reached the model even
+    # though the plain fallback renders them. t2/week4 is the fixture's
+    # own case with a real (non-empty) idea, per tests/test_email_render.py.
+    league = load_fixture_league()
+    brief = build_brief(league, team_id="t2", week=4)
+    ideas = trade_ideas(league, "t2", 4)
+    assert ideas["ideas"], "this test only proves anything with a real idea in it"
+    first_idea = ideas["ideas"][0]
+
+    seen = {}
+
+    def _runner(prompt, **kwargs):
+        seen["prompt"] = prompt
+        return 0, "This week looks stable, nothing else to add here.\nSTATUS ok", ""
+
+    compose_email("weekly", brief, _config(), trades=ideas, runner=_runner)
+
+    assert "TRADE IDEAS" in seen["prompt"]
+    assert first_idea["send"]["name"] in seen["prompt"]
+    assert first_idea["receive"]["name"] in seen["prompt"]
+
+
+def test_compose_email_claude_draft_naming_a_trade_partner_player_is_accepted():
+    # A trade partner's player is not named anywhere else in brief, so
+    # without prose_gate.brief_player_names also reading brief["trades"],
+    # a draft that follows the prompt's own instruction to mention a
+    # trade idea would always be rejected as an unknown player.
+    league = load_fixture_league()
+    brief = build_brief(league, team_id="t2", week=4)
+    ideas = trade_ideas(league, "t2", 4)
+    first_idea = ideas["ideas"][0]
+    send_name = first_idea["send"]["name"]
+    receive_name = first_idea["receive"]["name"]
+
+    def _runner(prompt, **kwargs):
+        stdout = (
+            f"Consider sending {send_name} to {first_idea['partner_team_name']} "
+            f"for {receive_name} this week.\nSTATUS ok\n"
+        )
+        return 0, stdout, ""
+
+    subject, body, source = compose_email(
+        "weekly", brief, _config(), trades=ideas, runner=_runner
+    )
+
+    assert source == "claude"
+    assert send_name in body
+    assert receive_name in body
+
+
+def test_compose_email_forwards_inactive_changes_to_the_claude_prompt():
+    brief = _weekly_brief()
+    changes = [
+        {
+            "player_id": "p1002",
+            "name": "Brix Duskin",
+            "slot": "RB",
+            "status": "O",
+            "reason": "Ruled out pregame.",
+            "replacement_player_id": "p1010",
+            "replacement_name": "Trace Winslow",
+            "points_gained": 10.5,
+        }
+    ]
+
+    seen = {}
+
+    def _runner(prompt, **kwargs):
+        seen["prompt"] = prompt
+        return 0, "Brix Duskin is out and Trace Winslow steps in this week.\nSTATUS ok", ""
+
+    compose_email("inactive", brief, _config(), inactive_changes=changes, runner=_runner)
+
+    assert "INACTIVE CHANGES" in seen["prompt"]
+    assert "Brix Duskin" in seen["prompt"]
+    assert "Trace Winslow" in seen["prompt"]
+
+
+def test_compose_email_with_neither_trades_nor_inactive_changes_omits_extra_context():
+    seen = {}
+
+    def _runner(prompt, **kwargs):
+        seen["prompt"] = prompt
+        return 0, "Everything looks fine this week, nothing changes here.\nSTATUS ok", ""
+
+    compose_email("weekly", _weekly_brief(), _config(), runner=_runner)
+
+    assert "TRADE IDEAS" not in seen["prompt"]
+    assert "INACTIVE CHANGES" not in seen["prompt"]
+
+
+# ---------------------------------------------------------------------------
+# error_status_token: a fixed machine-readable slug, not free-text
+# ---------------------------------------------------------------------------
+
+
+def test_error_status_token_slugs_the_error_class_name():
+    assert error_status_token(EngineError("unknown team_id: nope")) == "engine-error"
+
+
+def test_error_status_token_never_carries_the_message_text():
+    token = error_status_token(EngineError("multi word message: with a colon"))
+    assert " " not in token
+    assert ":" not in token
 
 
 # ---------------------------------------------------------------------------

@@ -326,7 +326,7 @@ def trade_ideas(
                         "points_gained": points_gained,
                         "note": (
                             f"Send surplus {send_position} depth to {partner['name']} "
-                            f"for help at {receive_position}."
+                            f"for help at {receive_position} this week."
                         ),
                     }
                 )

@@ -69,6 +69,29 @@ def test_flagged_lineup_toss_up_passes_either_side():
     assert result_other["ok"] is True
 
 
+def test_bench_led_comparative_mirrors_direction_off_its_own_trigger_word():
+    # Regression guard: the comparative carve-out once hardcoded
+    # before-comparative=start / after-comparative=bench regardless of
+    # which trigger word the sentence actually used. "START X over Y"
+    # (the only form engine.email_render emits) happens to fit that fixed
+    # direction, but "SIT X instead of Y" puts the BENCHED player first,
+    # and a fixed direction would silently pass a draft that inverts the
+    # brief's own start/sit call. Brief says: start Trace Winslow
+    # (p1010), sit Brix Duskin (p1002), at RB.
+    brief = _weekly_brief()
+
+    inverted = "Sit Trace Winslow instead of Brix Duskin this week."
+    inverted_result = check_draft(inverted, brief)
+    assert inverted_result["ok"] is False
+    kinds = {v["kind"] for v in inverted_result["violations"]}
+    assert "verdict-conflict" in kinds
+
+    correct = "Sit Brix Duskin instead of Trace Winslow this week."
+    correct_result = check_draft(correct, brief)
+    assert correct_result["ok"] is True
+    assert correct_result["violations"] == []
+
+
 def test_non_toss_up_starter_benched_fails():
     brief = _weekly_brief()
 

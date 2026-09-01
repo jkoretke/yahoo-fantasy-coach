@@ -23,7 +23,12 @@ league:
   # league_id or the season. Default: null.
   game_id: null
   # Your own team id within the league, used to know whose lineup and
-  # waivers this coach is managing. Default: "" (not yet known).
+  # waivers this coach is managing. Every run wrapper resolves the team it
+  # runs for as --team, else this key, else engine.fixtures.owner_team_id
+  # (a live league's own is_owner_team flag). Left blank, a live run
+  # depends entirely on Yahoo's matchup data correctly flagging your team;
+  # set this to fall back safely if that flag is ever missing or blank.
+  # Default: "" (not yet known).
   team_id: ""
 
 # IANA timezone name used for every date and time this coach prints or

@@ -11,6 +11,14 @@ The wrapper always exits 0, including when an engine.common.EngineError is
 raised anywhere in the flow, so a scheduler's OnFailure alert only fires if
 this process itself is killed.
 
+On a live (non-fixtures) run, the schedule is fetched through
+engine.sources.schedule.fetch_week_schedule, honoring config's
+sources.schedule toggle (engine.config.source_enabled). When that source
+is unavailable, whether from a genuine fetch failure or because it is
+turned off, this routine cannot compute a kickoff window at all, so it
+does not guess: it prints "STATUS failed inactive schedule-unavailable"
+instead of "STATUS skipped no-games" and sends no email.
+
 Flow: engine.timing.starter_nfl_teams names the NFL teams the team's
 current starters play for; engine.timing.next_kickoff finds the earliest
 kickoff among those teams at or after --now (an ISO instant, defaulting to
@@ -45,6 +53,15 @@ that a dry run could never be used to prove the second-run-is-silent
 behavior. To force a clean re-test of the window from scratch, delete the
 relevant file under the runs root first, for example:
     rm runs/2026/wk03/inactive-*.sent
+
+THE .sent FILE IS NEVER WRITTEN AFTER A FAILED REAL SEND. A dry run always
+writes it (see above), but a real (non-dry-run) send that
+engine.run_common.deliver reports as failed leaves the file untouched, old
+keys and all: writing the new keys anyway would permanently suppress the
+one alert this routine exists to deliver, with no way to tell a legitimate
+"nothing changed" skip apart from "the email never actually went out" on
+the next run. A transient failure is therefore retried in full the next
+time this routine runs, rather than silently lost.
 
 Public names: main.
 """
@@ -274,14 +291,20 @@ def main(argv: list[str] | None = None) -> int:
     dry-run preview, or nothing at all on a real send); and finally a
     STATUS line ("STATUS skipped no-games", "STATUS skipped not-yet",
     "STATUS skipped no-change", "STATUS dry-run inactive", "STATUS emailed
-    inactive", or "STATUS failed inactive <reason>" when a real send
-    reports failure without raising).
+    inactive", "STATUS failed inactive email-send-failed" when a real send
+    reports failure without raising, or "STATUS failed inactive
+    schedule-unavailable" when the live schedule source could not be read
+    or is disabled in config, since this routine cannot compute a kickoff
+    window without it).
 
     An engine.common.EngineError raised anywhere in the flow (a bad
     config, an unresolvable week on a live run, a bad routine label, and
     so on) is caught here, reported to stderr as one line, and reported as
-    "STATUS failed inactive <reason>" instead of propagating, so this
-    process always exits 0.
+    "STATUS failed inactive <token>" instead of propagating, so this
+    process always exits 0. <token> is a short, fixed, kebab-case slug of
+    the error's class name (engine.run_common.error_status_token, e.g.
+    "engine-error"), never the free-text message itself: the full message
+    is still on the stderr line printed immediately before it.
     """
     parser = _build_arg_parser()
     args = parser.parse_args(argv)
@@ -314,7 +337,7 @@ def main(argv: list[str] | None = None) -> int:
                 },
             )
 
-        team_id = args.team or owner_team_id(league)
+        team_id = args.team or config["league"]["team_id"] or owner_team_id(league)
         week = args.week if args.week is not None else league["current_week"]
 
         if args.schedule is not None:
@@ -322,7 +345,18 @@ def main(argv: list[str] | None = None) -> int:
         elif args.fixtures:
             schedule_data = load_fixture_schedule()
         else:
-            schedule_data = fetch_week_schedule(league["season"], week)["data"]
+            schedule_result = fetch_week_schedule(
+                league["season"], week, enabled=source_enabled(config, "schedule")
+            )
+            if not schedule_result["available"]:
+                # A genuine fetch failure and a deliberate sources.schedule:
+                # false both land here with the same distinct status: this
+                # routine cannot decide anything about kickoff timing
+                # without a schedule, so there is no safe way to tell that
+                # apart from a real no-games day other than saying so.
+                run_common.print_status("failed", ROUTINE, "schedule-unavailable")
+                return 0
+            schedule_data = schedule_result["data"]
 
         now_value = args.now if args.now is not None else datetime.now(timezone.utc)
 
@@ -367,8 +401,13 @@ def main(argv: list[str] | None = None) -> int:
 
         sent = run_common.deliver(subject, body, config, dry_run=args.dry_run)
 
-        new_keys = {_change_key(change) for change in changes_to_send}
-        write_sent(path, already_sent | new_keys)
+        # Only record these keys as reported when a dry run previewed them
+        # (see the module docstring's "written on dry runs too") or a real
+        # send actually succeeded. A failed real send must not be written
+        # here, or the alert it failed to deliver would never be retried.
+        if args.dry_run or sent:
+            new_keys = {_change_key(change) for change in changes_to_send}
+            write_sent(path, already_sent | new_keys)
 
         if args.dry_run:
             run_common.print_status("dry-run", ROUTINE)
@@ -379,7 +418,7 @@ def main(argv: list[str] | None = None) -> int:
 
     except EngineError as error:
         print(f"engine.inactive_run: {error}", file=sys.stderr)
-        run_common.print_status("failed", ROUTINE, str(error))
+        run_common.print_status("failed", ROUTINE, run_common.error_status_token(error))
 
     return 0
 

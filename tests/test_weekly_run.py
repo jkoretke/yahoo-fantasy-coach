@@ -101,5 +101,8 @@ def test_build_brief_engine_error_still_exits_zero_with_failed_status(
     lines = [line for line in captured.out.splitlines() if line.strip()]
 
     assert exit_code == 0
-    assert lines[-1] == "STATUS failed weekly boom: no such team"
+    # The STATUS payload is a short fixed token, not the free-text message
+    # (see engine.run_common.error_status_token): the message itself still
+    # reaches stderr, on the line printed immediately before STATUS.
+    assert lines[-1] == "STATUS failed weekly engine-error"
     assert "boom: no such team" in captured.err

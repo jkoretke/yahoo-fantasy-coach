@@ -336,14 +336,22 @@ def test_only_yahoo_client_mentions_the_yahoo_api_host() -> None:
 
 
 def test_no_engine_module_contains_a_write_verb_call_site() -> None:
-    # Every function under engine/ is read only, so no module should ever
-    # contain a call-site substring for an HTTP write verb. Deliberately
-    # written as call-site substrings (".post(", not the bare word
-    # "post") because Yahoo's own league settings legitimately contain a
-    # key named post_draft_players (see fixtures/yahoo/league_settings.json
-    # and engine/yahoo_shapes.py's docstrings), and a bare-word check
-    # would false-positive on that key name appearing in a docstring or
-    # comment.
+    # Every module that talks to Yahoo is read only by construction, so
+    # none of them should ever contain a call-site substring for an HTTP
+    # write verb. Deliberately written as call-site substrings (".post(",
+    # not the bare word "post") because Yahoo's own league settings
+    # legitimately contain a key named post_draft_players (see
+    # fixtures/yahoo/league_settings.json and engine/yahoo_shapes.py's
+    # docstrings), and a bare-word check would false-positive on that key
+    # name appearing in a docstring or comment.
+    #
+    # Scoped to the Yahoo-facing modules on purpose, not every module
+    # under engine/: engine/notify.py is a deliberate, legitimate write
+    # call site (it POSTs to Brevo's API, and curl-uploads to SMTP), so it
+    # is excluded here rather than left to dodge this scan with a
+    # deliberately omitted method="POST" kwarg, which is what it used to
+    # do (see engine/notify.py's own send_via_brevo, which spells the
+    # kwarg out).
     write_verb_call_sites = (
         ".post(",
         ".put(",
@@ -353,8 +361,13 @@ def test_no_engine_module_contains_a_write_verb_call_site() -> None:
         'method="PUT"',
         'method="DELETE"',
     )
+    scanned_paths = [
+        REPO_ROOT / "engine" / "yahoo_client.py",
+        REPO_ROOT / "engine" / "yahoo_shapes.py",
+        *sorted((REPO_ROOT / "engine" / "sources").rglob("*.py")),
+    ]
     offenders: list[tuple[str, str]] = []
-    for path in sorted((REPO_ROOT / "engine").rglob("*.py")):
+    for path in scanned_paths:
         text = path.read_text(encoding="utf-8")
         for verb in write_verb_call_sites:
             if verb in text:

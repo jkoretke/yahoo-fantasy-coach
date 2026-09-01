@@ -12,10 +12,12 @@ this repo, in this file or any other, ever invokes a real claude process. draft_
 compose_email both accept a `runner` override for the same reason.
 
 compose_email is where docs/plan.md's determinism split is enforced end to end: it drafts prose
-with Claude, checks it with engine.prose_gate against the same brief the draft was written from,
-and falls back to a fully deterministic engine.email_render rendering on any rejection, because
-the plan says the email always goes out. In `--fixtures` mode (or with prose="plain") it never
-drafts anything, so a fixtures run never spawns a subprocess at all.
+with Claude (from the brief PLUS trades and inactive_changes, each appended as its own fenced
+JSON block so weekly's trade ideas and inactive's change list actually reach the model), checks
+it with engine.prose_gate against that same data, and falls back to a fully deterministic
+engine.email_render rendering on any rejection, because the plan says the email always goes out.
+In `--fixtures` mode (or with prose="plain") it never drafts anything, so a fixtures run never
+spawns a subprocess at all.
 
 apply_toss_up_margin lets a wrapper apply config's toss_up_margin_points to a brief that
 engine.brief.build_brief already assembled at the module default, without engine.brief or
@@ -23,12 +25,13 @@ engine.lineup or engine.waivers needing to change. See its own docstring for the
 branch this depends on.
 
 Public names: STATUS_PREFIX, PROMPTS_DIR, PROSE_MODES, prompt_path, load_prompt,
-find_status_line, strip_status_line, status_line, print_status, run_claude, draft_body,
-apply_toss_up_margin, compose_email, deliver.
+find_status_line, strip_status_line, status_line, print_status, error_status_token, run_claude,
+draft_body, apply_toss_up_margin, compose_email, deliver.
 """
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -125,6 +128,24 @@ def print_status(outcome: str, *tokens: str) -> None:
     line.
     """
     print(status_line(outcome, *tokens))
+
+
+def error_status_token(error: Exception) -> str:
+    """Return a short, fixed, kebab-case token naming error's class.
+
+    STATUS lines are meant to be machine-readable tokens a scheduler
+    parses, not free English prose: str(an EngineError) can be an
+    arbitrary multi-word message (docs/plan.md's own example is "unknown
+    team_id: nope"), and could in principle even contain a newline, which
+    would push text after what is supposed to be the run's last line.
+    Every wrapper's except block uses this instead of str(error) for the
+    STATUS payload, e.g. "EngineError" -> "engine-error",
+    "SourceUnavailable" -> "source-unavailable". The full message is not
+    lost: it is still printed to stderr, on the line immediately before
+    the STATUS line, which is where a human or a log reader belongs.
+    """
+    name = type(error).__name__
+    return re.sub(r"(?<!^)(?=[A-Z])", "-", name).lower()
 
 
 def run_claude(
@@ -284,12 +305,20 @@ def compose_email(
     body directly from brief (plus trades / inactive_changes); run_claude is
     never called, so a --fixtures run never spawns a subprocess.
 
-    On the claude path, draft_body drafts a body, then
-    engine.prose_gate.check_draft validates it against this SAME brief. A
-    rejection, or draft_body returning no body at all, is logged to stderr
-    (the gate's own violations when there were any to check, the draft
-    failure reason otherwise) and falls back to render_plain_email, because
-    the plan says the email always goes out.
+    On the claude path, draft_body drafts a body from brief PLUS trades and
+    inactive_changes (each rendered as its own labelled fenced JSON block
+    appended after the brief, via draft_body's extra_context parameter, only
+    when the corresponding argument here is not None) so weekly's trade
+    ideas and inactive's change list actually reach the model instead of
+    being silently dropped. engine.prose_gate.check_draft then validates
+    the draft against this SAME brief, widened with a "trades" key when
+    trades is not None (see engine.prose_gate.brief_player_names, which
+    reads it) so a trade partner's player, named nowhere else in brief,
+    does not trip an unknown-player violation just for having been offered
+    in a trade idea. A rejection, or draft_body returning no body at all,
+    is logged to stderr (the gate's own violations when there were any to
+    check, the draft failure reason otherwise) and falls back to
+    render_plain_email, because the plan says the email always goes out.
 
     source is "claude" or "plain": which path actually produced body.
     """
@@ -311,16 +340,45 @@ def compose_email(
     if resolved == "plain":
         return subject, _plain_body(), "plain"
 
-    body, reason = draft_body(routine, brief, config, runner=runner)
+    extra_context = _build_extra_context(trades, inactive_changes)
+    body, reason = draft_body(routine, brief, config, extra_context=extra_context, runner=runner)
     if body is None:
         print(f"run_common: no claude draft used ({reason})", file=sys.stderr)
     else:
-        result = check_draft(body, brief)
+        brief_for_check = brief
+        if trades is not None:
+            # trades names players on other teams' rosters, which brief
+            # itself never carries (brief only names the owner's own team
+            # and this week's opponent); brief_player_names reads a
+            # "trades" key exactly this shape when present, so a widened
+            # copy is passed here without mutating the caller's brief.
+            brief_for_check = dict(brief)
+            brief_for_check["trades"] = trades
+        result = check_draft(body, brief_for_check)
         if result["ok"]:
             return subject, body, "claude"
         print(format_violations(result), file=sys.stderr)
 
     return subject, _plain_body(), "plain"
+
+
+def _build_extra_context(
+    trades: dict[str, Any] | None, inactive_changes: list[dict[str, Any]] | None
+) -> str:
+    """Return draft_body's extra_context string for trades and inactive_changes.
+
+    Each argument that is not None becomes its own labelled fenced JSON
+    block; both, either, or neither may be present. Returns "" when both
+    are None, which draft_body already treats as "nothing to append".
+    """
+    parts: list[str] = []
+    if trades is not None:
+        parts.append("TRADE IDEAS:\n```json\n" + json.dumps(trades, indent=2) + "\n```")
+    if inactive_changes is not None:
+        parts.append(
+            "INACTIVE CHANGES:\n```json\n" + json.dumps(inactive_changes, indent=2) + "\n```"
+        )
+    return "\n\n".join(parts)
 
 
 def deliver(

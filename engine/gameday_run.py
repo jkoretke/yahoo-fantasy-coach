@@ -19,6 +19,15 @@ UTC date). No game on that date means no email at all: "STATUS skipped
 no-games" is printed and this process returns 0 having built no brief and
 sent nothing.
 
+On a live (non-fixtures) run, the schedule is fetched through
+engine.sources.schedule.fetch_week_schedule, honoring config's
+sources.schedule toggle (engine.config.source_enabled). When that source
+is unavailable, whether from a genuine fetch failure or because it is
+turned off, this routine cannot tell a real no-games day apart from "the
+schedule could not be read", so it does not guess: it prints "STATUS
+failed gameday schedule-unavailable" instead of "STATUS skipped no-games"
+and sends no email.
+
 The gameday email is deliberately NOT a diff against a prior lineup: it
 carries the full recommended lineup from engine.brief.build_brief's
 optimal_lineup, exactly as engine.email_render.render_plain_email("gameday",
@@ -163,15 +172,21 @@ def main(argv: list[str] | None = None) -> int:
     On success prints, in order: nothing at all on the no-games skip path;
     otherwise the composed email (deliver's own dry-run preview, or nothing
     at all on a real send); and finally a STATUS line ("STATUS skipped
-    no-games", "STATUS dry-run gameday", "STATUS emailed gameday", or
-    "STATUS failed gameday <reason>" when a real send reports failure
-    without raising).
+    no-games", "STATUS dry-run gameday", "STATUS emailed gameday",
+    "STATUS failed gameday email-send-failed" when a real send reports
+    failure without raising, or "STATUS failed gameday schedule-unavailable"
+    when the live schedule source could not be read or is disabled in
+    config, since this routine cannot decide whether today matters without
+    it).
 
     An engine.common.EngineError raised anywhere in the flow (a bad
     config, an unresolvable week on a live run, a bad routine label, and
     so on) is caught here, reported to stderr as one line, and reported as
-    "STATUS failed gameday <reason>" instead of propagating, so this
-    process always exits 0.
+    "STATUS failed gameday <token>" instead of propagating, so this
+    process always exits 0. <token> is a short, fixed, kebab-case slug of
+    the error's class name (engine.run_common.error_status_token, e.g.
+    "engine-error"), never the free-text message itself: the full message
+    is still on the stderr line printed immediately before it.
     """
     parser = _build_arg_parser()
     args = parser.parse_args(argv)
@@ -204,7 +219,7 @@ def main(argv: list[str] | None = None) -> int:
                 },
             )
 
-        team_id = args.team or owner_team_id(league)
+        team_id = args.team or config["league"]["team_id"] or owner_team_id(league)
         week = args.week if args.week is not None else league["current_week"]
 
         if args.schedule is not None:
@@ -212,7 +227,18 @@ def main(argv: list[str] | None = None) -> int:
         elif args.fixtures:
             schedule_data = load_fixture_schedule()
         else:
-            schedule_data = fetch_week_schedule(league["season"], week)["data"]
+            schedule_result = fetch_week_schedule(
+                league["season"], week, enabled=source_enabled(config, "schedule")
+            )
+            if not schedule_result["available"]:
+                # A genuine fetch failure and a deliberate sources.schedule:
+                # false both land here with the same distinct status: this
+                # routine cannot decide whether today matters without a
+                # schedule, so there is no safe way to tell that apart from
+                # a real no-games day other than saying so.
+                run_common.print_status("failed", ROUTINE, "schedule-unavailable")
+                return 0
+            schedule_data = schedule_result["data"]
 
         target_date = args.date if args.date is not None else datetime.now(timezone.utc).date()
 
@@ -248,7 +274,7 @@ def main(argv: list[str] | None = None) -> int:
 
     except EngineError as error:
         print(f"engine.gameday_run: {error}", file=sys.stderr)
-        run_common.print_status("failed", ROUTINE, str(error))
+        run_common.print_status("failed", ROUTINE, run_common.error_status_token(error))
 
     return 0
 

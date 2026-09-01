@@ -118,9 +118,13 @@ def format_changes(changes: list[dict[str, Any]]) -> str:
         )
         if change.get("toss_up"):
             first, second = change["toss_up_options"]
+            # Ends on a lowercase word on purpose (see engine.prose_gate's
+            # own module docstring): a capitalized player name immediately
+            # followed by the next section's capitalized opening word
+            # would otherwise merge into one unrecognized run.
             lines.append(
                 f"  Toss up, within {_fmt_pts(change['toss_up_margin'])} pts: "
-                f"could go either way between {first['name']} and {second['name']}."
+                f"could go either way between {first['name']} and {second['name']} this week."
             )
     return _section("Start/sit calls", lines)
 
@@ -249,8 +253,13 @@ def format_inactive_changes(changes: list[dict[str, Any]]) -> str:
 
     lines: list[str] = []
     for change in changes:
-        lines.append(f"{change['name']} ({change['slot']}) - {change['status']}")
-        lines.append(f"  {change['reason']}")
+        # name/slot and reason share one line on purpose: change["status"]
+        # (a bare "O" or "BYE") ending a line on its own, immediately
+        # followed by the next line's capitalized opening word, is exactly
+        # the cross-line merge engine.prose_gate's own module docstring
+        # warns about, and reason already restates status in context
+        # ("Ruled out: status O", "On bye (week 3)"), so nothing is lost.
+        lines.append(f"{change['name']} ({change['slot']}): {change['reason']}")
         if change.get("replacement_player_id"):
             lines.append(
                 f"  Swap in {change['replacement_name']} "

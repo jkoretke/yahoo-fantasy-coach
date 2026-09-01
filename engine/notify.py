@@ -107,10 +107,12 @@ def send_via_brevo(
         "subject": subject,
         "textContent": body,
     }
-    # No explicit method kwarg: urllib.request.Request already resolves to
-    # POST whenever data is given, and a repo-wide test scans engine/ for
-    # literal write-verb call sites (aimed at Yahoo API calls staying read
-    # only), so this stays out of that scan while sending the same request.
+    # This IS this repo's one deliberate write call site: it legitimately
+    # POSTs to Brevo's transactional email API, unlike every function under
+    # engine.yahoo_client, engine.yahoo_shapes and engine.sources, which
+    # are read-only by construction. tests/test_yahoo_phase3_integration.py's
+    # write-verb guard scans only those Yahoo-facing modules for exactly
+    # that reason, so this module is free to spell the method out plainly.
     request = urllib.request.Request(
         f"{api_base}/smtp/email",
         data=json.dumps(payload).encode("utf-8"),
@@ -119,6 +121,7 @@ def send_via_brevo(
             "content-type": "application/json",
             "accept": "application/json",
         },
+        method="POST",
     )
     try:
         with urllib.request.urlopen(request, timeout=_HTTP_TIMEOUT_SECONDS) as response:

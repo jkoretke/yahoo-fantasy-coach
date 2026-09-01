@@ -24,6 +24,7 @@ from engine.email_render import (
     subject_for,
 )
 from engine.fixtures import load_fixture_league
+from engine.prose_gate import check_draft
 from engine.trades import trade_ideas
 
 EM_DASH = "\u2014"
@@ -415,3 +416,62 @@ def test_no_em_dash_across_every_routine(weekly_brief, priority_league):
     ]:
         subject, body = render_plain_email(routine, brief, **kwargs)
         _assert_no_em_dash(subject, body)
+
+
+def test_render_plain_email_passes_its_own_prose_gate_for_every_routine(
+    weekly_brief, priority_league, league
+):
+    # Regression guard for a QA finding: engine.prose_gate.check_draft
+    # rejected render_plain_email's OWN weekly and waiver bodies (a
+    # "START X over Y" comparative sentence reads as a verdict conflict
+    # for Y, and "Drop <name>" reads as an unrecognized player name),
+    # which would have made the Claude prose path fall back to plain on
+    # nearly every real run. check_draft is meant to gate a Claude draft,
+    # but a fully deterministic, brief-accurate rendering must never trip
+    # it either; if it does, that draft would have been wrongly rejected
+    # too. Every routine's plain body is exercised here, including a week
+    # with a real (non-empty) trade idea, since that path names a second
+    # team's player brief_player_names does not otherwise carry.
+    priority_brief = build_brief(priority_league)
+    inactive_changes = [
+        {
+            "player_id": "p1002",
+            "name": "Brix Duskin",
+            "slot": "RB",
+            "status": "O",
+            "reason": "Ruled out pregame.",
+            "replacement_player_id": "p1010",
+            "replacement_name": "Trace Winslow",
+            "points_gained": 10.5,
+        },
+        {
+            "player_id": "p1005",
+            "name": "Tanner Elderfield",
+            "slot": "WR",
+            "status": "BYE",
+            "reason": "On bye in week 3.",
+            "replacement_player_id": "p1011",
+            "replacement_name": "Corbin Rourke",
+            "points_gained": 8.9,
+        },
+    ]
+
+    trade_brief = build_brief(league, team_id="t2", week=4)
+    trade_ideas_result = trade_ideas(league, "t2", 4)
+    assert trade_ideas_result["ideas"], "this case only proves anything with real ideas in it"
+    trade_brief_for_check = dict(trade_brief)
+    trade_brief_for_check["trades"] = trade_ideas_result
+
+    cases = [
+        ("weekly", weekly_brief, {"trades": None}, weekly_brief),
+        ("weekly", trade_brief, {"trades": trade_ideas_result}, trade_brief_for_check),
+        ("gameday", weekly_brief, {}, weekly_brief),
+        ("waiver", weekly_brief, {}, weekly_brief),
+        ("waiver", priority_brief, {}, priority_brief),
+        ("inactive", weekly_brief, {"inactive_changes": inactive_changes}, weekly_brief),
+    ]
+
+    for routine, brief, kwargs, brief_for_check in cases:
+        subject, body = render_plain_email(routine, brief, **kwargs)
+        result = check_draft(body, brief_for_check)
+        assert result["ok"], (routine, result["violations"])

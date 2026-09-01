@@ -98,7 +98,7 @@ def test_live_schedule_fetch_failure_reports_failed_not_no_games(tmp_path, monke
 
     exit_code = main(["--week", "3", "--dry-run", "--runs-root", str(tmp_path)])
 
-    assert exit_code == 0
+    assert exit_code == 1
     out = capsys.readouterr().out
     lines = [line for line in out.splitlines() if line.strip()]
     assert lines[-1] == "STATUS failed gameday schedule-unavailable"
@@ -128,7 +128,7 @@ def test_live_schedule_disabled_in_config_also_reports_failed(tmp_path, monkeypa
         ["--week", "3", "--dry-run", "--runs-root", str(tmp_path), "--config", str(config_path)]
     )
 
-    assert exit_code == 0
+    assert exit_code == 1
     assert seen["enabled"] is False
     out = capsys.readouterr().out
     lines = [line for line in out.splitlines() if line.strip()]

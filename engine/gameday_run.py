@@ -7,9 +7,11 @@ engine/blog_run.py: assemble a run's data, compose exactly one email for it
 (Claude prose when available and it passes the gate, a fully deterministic
 rendering otherwise), send or preview that one email, then print a machine
 readable STATUS line as the very last thing this process writes to stdout.
-The wrapper always exits 0, including when an engine.common.EngineError is
-raised anywhere in the flow, so a scheduler's OnFailure alert only fires if
-this process itself is killed.
+The wrapper's exit code follows that STATUS line and nothing else: 0 when the
+run did its job (emailed, dry-run, or a legitimate skip), 1 when it printed a
+"failed" outcome, including when an engine.common.EngineError is caught
+anywhere in the flow. That is what makes a scheduler's OnFailure alert able to
+see a failure this process handled itself, not only one that killed it.
 
 The runner, not a fixed weekday list, decides whether today matters:
 engine.timing.starter_nfl_teams names the NFL teams the team's current
@@ -121,7 +123,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "Week number (default: the league's current week for a fixtures "
-            "run; required for a live run)."
+            "run; ESPN's own current week for a live run, see "
+            "engine.run_common.resolve_week)."
         ),
     )
     parser.add_argument(
@@ -167,7 +170,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the gameday routine once. Always returns 0.
+    """Run the gameday routine once. Returns 0, or 1 on a failed outcome.
 
     On success prints, in order: nothing at all on the no-games skip path;
     otherwise the composed email (deliver's own dry-run preview, or nothing
@@ -182,8 +185,8 @@ def main(argv: list[str] | None = None) -> int:
     An engine.common.EngineError raised anywhere in the flow (a bad
     config, an unresolvable week on a live run, a bad routine label, and
     so on) is caught here, reported to stderr as one line, and reported as
-    "STATUS failed gameday <token>" instead of propagating, so this
-    process always exits 0. <token> is a short, fixed, kebab-case slug of
+    "STATUS failed gameday <token>" instead of propagating, and this
+    process then exits 1. <token> is a short, fixed, kebab-case slug of
     the error's class name (engine.run_common.error_status_token, e.g.
     "engine-error"), never the free-text message itself: the full message
     is still on the stderr line printed immediately before it.
@@ -201,18 +204,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.fixtures:
             fixture_dir = Path(args.fixture_dir) if args.fixture_dir else None
             league = load_fixture_league(fixture_dir)
+            week = args.week if args.week is not None else league["current_week"]
         else:
-            if args.week is None:
-                raise EngineError(
-                    "--week is required for a live (non-fixtures) run: the "
-                    "current week cannot be known before the live league is "
-                    "fetched, and fetching the live league itself needs a "
-                    "week to fetch."
-                )
+            week = run_common.resolve_week(args.week, config)
             league = build_live_league(
                 league_id=config["league"]["league_id"],
                 season=config["league"]["season"],
-                week=args.week,
+                week=week,
                 game_id=config["league"]["game_id"],
                 sources_enabled={
                     name: source_enabled(config, name) for name in SOURCE_NAMES
@@ -220,7 +218,6 @@ def main(argv: list[str] | None = None) -> int:
             )
 
         team_id = args.team or config["league"]["team_id"] or owner_team_id(league)
-        week = args.week if args.week is not None else league["current_week"]
 
         if args.schedule is not None:
             schedule_data = load_fixture_schedule(Path(args.schedule))
@@ -236,8 +233,7 @@ def main(argv: list[str] | None = None) -> int:
                 # routine cannot decide whether today matters without a
                 # schedule, so there is no safe way to tell that apart from
                 # a real no-games day other than saying so.
-                run_common.print_status("failed", ROUTINE, "schedule-unavailable")
-                return 0
+                return run_common.print_status("failed", ROUTINE, "schedule-unavailable")
             schedule_data = schedule_result["data"]
 
         target_date = args.date if args.date is not None else datetime.now(timezone.utc).date()
@@ -246,8 +242,7 @@ def main(argv: list[str] | None = None) -> int:
         games = games_on_date(schedule_data, target_date, teams)
 
         if not games:
-            run_common.print_status("skipped", "no-games")
-            return 0
+            return run_common.print_status("skipped", "no-games")
 
         brief: dict[str, Any] = brief_module.build_brief(league, team_id, week, ROUTINE)
         brief = run_common.apply_toss_up_margin(brief, toss_up_margin(config))
@@ -266,17 +261,15 @@ def main(argv: list[str] | None = None) -> int:
         sent = run_common.deliver(subject, body, config, dry_run=args.dry_run)
 
         if args.dry_run:
-            run_common.print_status("dry-run", ROUTINE)
+            return run_common.print_status("dry-run", ROUTINE)
         elif sent:
-            run_common.print_status("emailed", ROUTINE)
+            return run_common.print_status("emailed", ROUTINE)
         else:
-            run_common.print_status("failed", ROUTINE, "email-send-failed")
+            return run_common.print_status("failed", ROUTINE, "email-send-failed")
 
     except EngineError as error:
         print(f"engine.gameday_run: {error}", file=sys.stderr)
-        run_common.print_status("failed", ROUTINE, run_common.error_status_token(error))
-
-    return 0
+        return run_common.print_status("failed", ROUTINE, run_common.error_status_token(error))
 
 
 if __name__ == "__main__":

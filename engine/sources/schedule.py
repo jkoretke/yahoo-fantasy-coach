@@ -58,9 +58,17 @@ this module. The only exception fetch_week_schedule may raise is
 engine.common.EngineError, and only for a genuine programmer error (an
 invalid cache key), never for anything ESPN itself can send back.
 
-Public names: SOURCE_NAME, SCOREBOARD_URL_TEMPLATE, REGULAR_SEASON_TYPE,
-POSTSEASON_TYPE, SCHEDULE_MAX_AGE_SECONDS, fetch_week_schedule,
-kickoff_by_team, teams_playing, earliest_kickoff, game_for_team.
+Current week: the same endpoint called with no dates/seasontype/week query
+string at all answers a different question, "which week is it right now",
+in its own top level "season" and "week" keys. fetch_current_week reads
+exactly that and nothing else; see its docstring for why it is the one
+function in this module that refuses a stale cache entry.
+
+Public names: SOURCE_NAME, SCOREBOARD_URL_TEMPLATE, CURRENT_SCOREBOARD_URL,
+PRESEASON_TYPE, REGULAR_SEASON_TYPE, POSTSEASON_TYPE,
+SCHEDULE_MAX_AGE_SECONDS, CURRENT_WEEK_MAX_AGE_SECONDS, fetch_week_schedule,
+fetch_current_week, kickoff_by_team, teams_playing, earliest_kickoff,
+game_for_team.
 """
 from __future__ import annotations
 
@@ -79,9 +87,17 @@ SCOREBOARD_URL_TEMPLATE = (
     "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
     "?dates={season}&seasontype={season_type}&week={week}"
 )
+CURRENT_SCOREBOARD_URL = (
+    "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
+)
+PRESEASON_TYPE = 1
 REGULAR_SEASON_TYPE = 2
 POSTSEASON_TYPE = 3
 SCHEDULE_MAX_AGE_SECONDS = 21600
+# Deliberately far shorter than SCHEDULE_MAX_AGE_SECONDS. A week's game list
+# barely moves once published, but the answer to "which week is it" changes
+# the moment ESPN rolls over, and every downstream fetch is keyed on it.
+CURRENT_WEEK_MAX_AGE_SECONDS = 3600
 
 
 def _parse_kickoff(raw: Any) -> str | None:
@@ -274,6 +290,108 @@ def fetch_week_schedule(
         "count": len(games),
     }
     return source_result(SOURCE_NAME, data=data, stale=stale, fetched_at=fetched_at)
+
+
+def fetch_current_week(
+    *,
+    enabled: bool = True,
+    cache_root: Path | None = None,
+    max_age_seconds: int = CURRENT_WEEK_MAX_AGE_SECONDS,
+    force_refresh: bool = False,
+) -> dict[str, Any]:
+    """Return the result envelope for "which NFL week is it right now".
+
+    Reads CURRENT_SCOREBOARD_URL, the same ESPN endpoint
+    fetch_week_schedule uses but with no query string, whose top level
+    "season" ({"type": 2, "year": 2026}) and "week" ({"number": 1}) keys
+    describe the current week rather than a requested one. Confirmed live
+    against that endpoint on 2026-08-31.
+
+    On success, envelope["data"] is:
+        {"season": <year>, "week": <number>, "season_type": <type>,
+         "source_url": CURRENT_SCOREBOARD_URL}
+    All three are ints. The games list is deliberately not parsed here:
+    this function answers only which week it is, and the caller then asks
+    fetch_week_schedule for that week's games through its own cache key.
+
+    THIS IS THE ONE FUNCTION IN THIS MODULE THAT REFUSES A STALE CACHE
+    ENTRY, inverting the house rule that stale data beats no data. Every
+    other source degrades one section of a brief; this one names the week
+    every other fetch is then keyed on, so a stale hit does not degrade a
+    run, it silently runs the entire week against the wrong week's data. A
+    stale entry is reported as unavailable_result(...) instead, and the
+    caller (engine.run_common.resolve_week) turns that into a hard
+    EngineError.
+
+    Like fetch_week_schedule: enabled=False returns disabled_result
+    immediately with zero network and zero disk calls, and every other
+    failure (a dead endpoint, a non-object body, a missing or unparseable
+    season/week block) degrades to unavailable_result rather than raising.
+    """
+    if not enabled:
+        return disabled_result(SOURCE_NAME)
+
+    try:
+        payload, fetched_at, stale = fetch_cached_json(
+            CURRENT_SCOREBOARD_URL,
+            "espn-scoreboard-current",
+            max_age_seconds=max_age_seconds,
+            cache_root=cache_root,
+            service=SOURCE_NAME,
+            force_refresh=force_refresh,
+        )
+    except SourceUnavailable as exc:
+        return unavailable_result(SOURCE_NAME, str(exc))
+
+    if stale:
+        return unavailable_result(
+            SOURCE_NAME,
+            "espn current-week response is stale and the week number must be current",
+        )
+
+    if not isinstance(payload, dict):
+        return unavailable_result(
+            SOURCE_NAME, "espn current-week response was not a JSON object"
+        )
+
+    season_block = payload.get("season")
+    week_block = payload.get("week")
+    if not isinstance(season_block, dict) or not isinstance(week_block, dict):
+        return unavailable_result(
+            SOURCE_NAME, "espn current-week response has no season/week block"
+        )
+
+    season = _as_int(season_block.get("year"))
+    season_type = _as_int(season_block.get("type"))
+    week = _as_int(week_block.get("number"))
+    if season is None or season_type is None or week is None:
+        return unavailable_result(
+            SOURCE_NAME, "espn current-week response has an unreadable season/week block"
+        )
+
+    data = {
+        "season": season,
+        "week": week,
+        "season_type": season_type,
+        "source_url": CURRENT_SCOREBOARD_URL,
+    }
+    return source_result(SOURCE_NAME, data=data, stale=False, fetched_at=fetched_at)
+
+
+def _as_int(value: Any) -> int | None:
+    """Return value as an int, or None when it is not usable as one.
+
+    ESPN sends these as real JSON numbers, but a bool is an int in Python
+    and a string year would still parse, so both are rejected explicitly
+    rather than quietly becoming a week number.
+    """
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return None
 
 
 def kickoff_by_team(schedule_data: dict[str, Any]) -> dict[str, str]:

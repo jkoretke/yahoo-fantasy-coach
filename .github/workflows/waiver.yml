@@ -3,15 +3,14 @@ name: waiver
 # request, so a fork can never reach these secrets. GitHub Actions cron is UTC
 # only and can run late, sometimes 15 minutes or more.
 #
-# KNOWN GAP: every wrapper exits 0 even when the run failed, so a GREEN JOB HERE
-# DOES NOT MEAN AN EMAIL WAS SENT. Read the STATUS line at the end of the job log:
-# "STATUS emailed waiver" is the only success. "STATUS failed waiver
-# engine-error" means a live run needed an explicit --week NN (nothing resolves the
-# current NFL week yet), and "STATUS failed waiver email-send-failed" means the
-# email backend could not send (for the smtp backend, usually a missing CURLRC
-# secret). The workflow_dispatch input below works today; the schedule path stays
-# blocked until a week resolver exists. Yahoo Fantasy Sports API access is also
-# still pending approval.
+# A failed run now fails the job: the wrapper exits 1 on any "failed" STATUS line, so
+# a red job means no email was sent. Read the STATUS line at the end of the job log
+# for which failure it was. "STATUS emailed waiver" is the success. "STATUS failed
+# waiver engine-error" is usually a week that could not be resolved from ESPN (pass
+# the workflow_dispatch week input to override it), and "STATUS failed waiver
+# email-send-failed" means the email backend could not send (for the smtp backend,
+# usually a missing CURLRC secret). A green job with "STATUS skipped ..." is a real
+# skip, not a failure. Yahoo Fantasy Sports API access is still pending approval.
 #
 # Required repository secrets: YAHOO_CLIENT_ID, YAHOO_CLIENT_SECRET,
 # YAHOO_REFRESH_TOKEN, LEAGUE_YAML (the whole contents of your config/league.yaml).

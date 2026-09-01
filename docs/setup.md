@@ -149,11 +149,11 @@ waiver deadline, `fantasy-gameday.service` runs daily and is silent when there i
 game, and `fantasy-inactive.service` polls every 5 minutes so the runner itself can
 decide whether a kickoff window is open. There is also a templated
 `deploy/fantasy-failure-alert@.service`, which each of the four reaches through
-`OnFailure=fantasy-failure-alert@%n.service`. That alert fires only when the
-wrapper itself was killed (it hit `TimeoutStartSec`) or its `ExecStartPre` failed,
-that is, when systemd itself could not even get the wrapper running. It does not
-fire for anything the wrapper catches and reports on its own; see "Known gaps"
-below for why that matters.
+`OnFailure=fantasy-failure-alert@%n.service`. That alert fires when the wrapper
+itself was killed (it hit `TimeoutStartSec`), when its `ExecStartPre` failed, and
+now also when the wrapper caught a failure and reported it itself, since a `STATUS
+failed ...` outcome exits 1. A run that succeeded or legitimately skipped exits 0
+and never reaches the alert. See "Known gaps" below.
 
 ### Three things the box needs that git will never deliver
 
@@ -215,19 +215,19 @@ configured.
 
 ## Known gaps
 
-- Every wrapper returns 0 on every failure path it catches, so a green Actions job
-  and a clean systemd unit both look identical to a fully successful run. The
-  `STATUS` line at the end of the log is the only signal that tells the two apart:
-  `STATUS emailed <routine>` is the only real success. `STATUS failed <routine>
-  engine-error` and `STATUS failed <routine> email-send-failed` are the two silent
-  failures, and systemd's `OnFailure=` will not fire for either one, since the
-  wrapper exited cleanly from systemd's point of view.
-- There is no current-week resolver yet. A live (non-fixtures) run of any of the
-  four wrappers currently requires an explicit `--week NN`, or it raises an engine
-  error and reports `engine-error` as above. Until a resolver exists, use the
-  `workflow_dispatch` `week` input in the Actions lane, or add `--week` to the
-  `ExecStart` line on the box. Do not trust an unattended live schedule to guess
-  the week correctly; today it cannot guess at all.
+- A wrapper's exit code follows its own `STATUS` line. `STATUS emailed <routine>`
+  and `STATUS dry-run <routine>` exit 0. So does a legitimate skip, `STATUS skipped
+  no-games` or `STATUS skipped not-yet`, which is most of what `gameday_run` and
+  `inactive_run` ever print: a non-zero exit there would mean an alert every five
+  minutes on a quiet Sunday. Any `STATUS failed ...` outcome exits 1, so systemd's
+  `OnFailure=` fires and an Actions job goes red. The `STATUS` line still says which
+  failure it was; the exit code only says that there was one.
+- A live run with no `--week` resolves the current NFL week from ESPN's own
+  scoreboard (`engine.run_common.resolve_week`). It never guesses: an unreachable
+  or stale source, a season that disagrees with `config/league.yaml`, or the
+  postseason (where ESPN restarts week numbering at 1) all fail the run instead of
+  running the wrong week. Pass `--week NN` on the box, or the `workflow_dispatch`
+  `week` input in the Actions lane, to override it.
 - Yahoo Fantasy Sports API access is still pending approval, so the one-time
   interactive OAuth browser sign-in cannot happen until that clears. Everything
   offline, that is every command that passes `--fixtures`, works today regardless

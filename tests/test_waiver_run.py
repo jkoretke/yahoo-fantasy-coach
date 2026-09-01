@@ -86,7 +86,7 @@ def test_fixtures_dry_run_prints_email_body_and_writes_brief_json(
     assert first_target_name in captured.out
 
 
-def test_build_brief_engine_error_still_exits_zero_with_failed_status(
+def test_build_brief_engine_error_exits_one_with_failed_status(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     def _raise(*args: object, **kwargs: object) -> None:
@@ -98,7 +98,7 @@ def test_build_brief_engine_error_still_exits_zero_with_failed_status(
     captured = capsys.readouterr()
     lines = [line for line in captured.out.splitlines() if line.strip()]
 
-    assert exit_code == 0
+    assert exit_code == 1
     # The STATUS payload is a short fixed token, not the free-text message
     # (see engine.run_common.error_status_token): the message itself still
     # reaches stderr, on the line printed immediately before STATUS.

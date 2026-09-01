@@ -135,10 +135,10 @@ Be honest about precision here: GitHub Actions cron can fire 15 minutes or more 
 That is fine for the weekly and waiver runs, but it makes the 75 minute pre-kickoff
 check in the inactive workflow imprecise in this lane.
 
-One more honest gap in both lanes: a live scheduled run still needs an explicit
-`--week` today, and a run that failed still exits 0, so read the `STATUS` line in the
-log rather than trusting a green job or a clean systemd unit. See docs/setup.md's
-Known gaps section.
+A run that failed exits non-zero in both lanes, so a red job or a failed systemd
+unit is a real failure. A legitimate skip (no games today, not yet inside the
+kickoff window) exits 0. The `STATUS` line at the end of the log says which of the
+two it was. See docs/setup.md's Known gaps section.
 
 ## Configuration
 

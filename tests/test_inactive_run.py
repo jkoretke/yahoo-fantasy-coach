@@ -103,7 +103,7 @@ def test_failed_real_send_does_not_write_sent_and_the_alert_is_retried(
         ]
     )
 
-    assert first_exit == 0
+    assert first_exit == 1
     out = capsys.readouterr().out
     lines = [line for line in out.splitlines() if line.strip()]
     assert lines[-1] == "STATUS failed inactive email-send-failed"

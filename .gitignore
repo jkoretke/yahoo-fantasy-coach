@@ -8,3 +8,4 @@ secrets.env
 runs/
 .DS_Store
 config/league.yaml
+docs/plan.md

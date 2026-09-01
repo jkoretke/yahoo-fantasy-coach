@@ -41,11 +41,22 @@ It lives at `github.com/jkoretke/yahoo-fantasy-coach`, the owner's personal acco
 deletion are blocked, and there is no bypass even for the owner. Commit locally and let him
 decide the PR. Never push.
 
-## Two gaps that will fool you
+## Exit codes follow the STATUS line
 
-1. **Every wrapper exits 0 even when it failed.** Read the `STATUS` line in the log. A green
-   GitHub Actions job or a clean systemd unit proves nothing.
-2. **There is no current-week resolver.** A live (non-fixture) run needs an explicit `--week`.
+A wrapper exits 1 on a `STATUS failed ...` outcome and 0 on everything else. A legitimate
+skip (`skipped no-games`, `skipped not-yet`) is a success on purpose: `gameday_run` and
+`inactive_run` print those constantly, so failing there would alert every five minutes.
+
+Keep it that way. The exit code and the printed STATUS line must never disagree, which is
+why `run_common.print_status` returns the code the wrapper then returns.
+
+## The news pass costs money, the other sources do not
+
+`engine/sources/news.py` spawns a `claude` subprocess. Sleeper, ESPN and Open-Meteo are free
+public APIs. So the news pass is asked by `weekly_run` only, once per run, and never on a
+`--fixtures` run. Do not call it from another routine without saying why.
+
+Claude reports what it read there. It never produces a number or a verdict.
 
 ## Development
 
@@ -60,8 +71,9 @@ pinned in `requirements.txt` but never actually installs, and the failure is sil
 Never let a test depend on whether `yfpy` is really present. Force the ImportError with
 `monkeypatch.setitem(sys.modules, "yfpy", None)`.
 
-A fresh checkout gives 729 passed and 2 skipped. The 2 skips are tests that read the owner's
-gitignored `config/league.yaml`; with that file present it is 731 passed. Neither is breakage.
+A fresh checkout reports 2 skipped. Those two tests read the owner's gitignored
+`config/league.yaml`, so they skip when it is absent. That is not breakage. No exact test
+count is written here on purpose, because it goes stale the moment anyone adds a test.
 
 Tests run fully offline with no credentials. `fixtures/` is the whole development path,
 because Yahoo API access is granted per person and is approval gated.

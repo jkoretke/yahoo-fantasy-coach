@@ -1,9 +1,51 @@
 # yahoo-fantasy-coach
 
-Reads your Yahoo Fantasy Football league (read-only) and computes weekly lineup, matchup, and
-waiver recommendations. See `docs/plan.md` for the full design. This README currently covers
-only the one-time Yahoo setup every user needs; the rest (install, running it, deploying it) is
-written in Phase 5.
+Reads your Yahoo Fantasy Football league (read only, the API grants no write access),
+computes the week's optimal lineup, start/sit calls, matchup projection, waiver targets,
+and trade ideas, then hands you the decisions. You tap the moves into the Yahoo app
+yourself. Python computes every number and every verdict; Claude only writes the prose,
+checked against the JSON Python produced. See `docs/plan.md` for the full design.
+
+## Run it with Claude Code (start here)
+
+This is the lead way to use this project, and it needs no development background:
+
+1. Clone the repo.
+2. One time, install dependencies into a virtual environment:
+   ```
+   python3 -m venv .venv
+   .venv/bin/python3 -m pip install -r requirements.txt
+   ```
+3. Open the folder in Claude Code and just ask it plainly, for example "do my fantasy
+   analysis" or "what should I do about waivers this week".
+4. Claude Code runs the routine for you and the recommendation comes back as chat
+   output. There is no cron to configure, no GitHub Actions secret, no email setup,
+   and no always-on machine.
+
+Under the hood, Claude Code runs one of these four commands. Each one works right now,
+with zero credentials, against the checked-in sample league:
+
+```
+.venv/bin/python3 -m engine.weekly_run --fixtures --dry-run
+.venv/bin/python3 -m engine.gameday_run --fixtures --date 2026-09-14 --dry-run
+.venv/bin/python3 -m engine.waiver_run --fixtures --dry-run
+.venv/bin/python3 -m engine.inactive_run --fixtures --now 2026-09-14T11:45Z --dry-run
+```
+
+| Routine | What it does |
+|---|---|
+| `weekly_run` | the full week plan: lineup, start/sit, matchup projection, waivers, trades |
+| `gameday_run` | a self-contained current lineup check for any day you have a game |
+| `waiver_run` | ranked waiver claims ahead of your league's waiver deadline |
+| `inactive_run` | a scratch caught 75 minutes before kickoff |
+
+The only setup you cannot skip for your own real league is the one-time Yahoo sign-in
+in the next section, and Claude Code can walk you through it two clicks at a time. Be
+honest with yourself about timing: Yahoo's Fantasy Sports API access is reviewed by a
+person and takes time to clear. Until yours does, the `--fixtures` demo above is what
+runs.
+
+See `docs/setup.md` for the full install and configuration reference.
 
 ## Yahoo API setup (do this first, one time)
 
@@ -72,3 +114,62 @@ so there is no published turnaround time.
 Nothing that touches Yahoo (`engine/yahoo_client.py` and anything built on it) can be used for
 real until this application is approved. See `docs/plan.md`'s Phase 3 entry for what proceeds in
 the meantime.
+
+## Optional: get it emailed on a schedule
+
+Both of these are an upgrade for people who want the recommendation pushed to them
+automatically instead of asking each week. Neither is required to use this project.
+
+### A box you control (systemd)
+
+`deploy/` holds a systemd service and timer for each of the four routines, plus a
+templated `fantasy-failure-alert@.service` that catches the case where a wrapper
+never even started. See `docs/setup.md` for the install steps.
+
+### GitHub Actions (no box needed)
+
+`.github/workflows/` holds the four scheduled workflows (`weekly.yml`, `waiver.yml`,
+`gameday.yml`, `inactive.yml`), each on its own cron. Secrets go in the repository's
+own secrets, never in the repo itself. See `docs/setup.md`.
+
+Be honest about precision here: GitHub Actions cron can fire 15 minutes or more late.
+That is fine for the weekly and waiver runs, but it makes the 75 minute pre-kickoff
+check in the inactive workflow imprecise in this lane.
+
+One more honest gap in both lanes: a live scheduled run still needs an explicit
+`--week` today, and a run that failed still exits 0, so read the `STATUS` line in the
+log rather than trusting a green job or a clean systemd unit. See docs/setup.md's
+Known gaps section.
+
+## Configuration
+
+Copy `config/league.example.yaml` to `config/league.yaml` and edit it for your own
+league. `config/league.yaml` is gitignored and is never committed. Real secrets live
+only in `~/.config/yahoo-fantasy-coach/secrets.env`, never in the repo. See
+`docs/setup.md` for every key.
+
+## Development
+
+```
+python3 -m venv .venv
+.venv/bin/python3 -m pip install -r requirements-dev.txt
+.venv/bin/python3 -m pytest -q
+.venv/bin/python3 -m ruff check .
+```
+
+Tests run fully offline, with no credentials, because Yahoo Fantasy Sports API access
+is granted per person and is approval gated: `fixtures/` is the entire development
+path for this project. See `CONTRIBUTING.md` for the full guide.
+
+## Contributing, security and license
+
+See `CONTRIBUTING.md` for how to propose a change, `CODE_OF_CONDUCT.md` for how we
+treat each other, and `SECURITY.md` to report a security issue. Every pull request
+needs the owner's review, enforced by `CODEOWNERS`. Licensed under the MIT license,
+see `LICENSE`.
+
+## Attribution
+
+Fantasy data provided by Yahoo Fantasy
+
+Additional data comes from Sleeper, ESPN's public endpoints, and Open-Meteo.
